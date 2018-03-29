@@ -1,10 +1,17 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0">
+<project>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.globsframework</groupId>
   <packaging>jar</packaging>
-  <artifactId>globs-json</artifactId>
-  <name>json adapter</name>
-  <version>1.0</version>
+  <artifactId>globs-gson</artifactId>
+  <name>Generic Lightweight ObjectS gson</name>
+  <version>3.0</version>
+
+  <repositories>
+    <repository>
+      <id>Maven2</id>
+      <url>http://download.java.net/maven/2/</url>
+    </repository>
+  </repositories>
 
   <build>
     <plugins>
@@ -17,44 +24,6 @@
           <target>1.8</target>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>2.6</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-resources-plugin</artifactId>
-        <version>2.3</version>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.10</version>
-        <configuration>
-          <systemProperties>
-            <property>
-              <name>uispec4j.test.library</name>
-              <value>junit</value>
-            </property>
-          </systemProperties>
-          <includes>
-            <include>**/*Test.java</include>
-            <include>**/*Tests.java</include>
-          </includes>
-          <excludes>
-            <exclude>**/*TestCase.java</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
-
     </plugins>
   </build>
 
@@ -62,13 +31,12 @@
     <dependency>
       <groupId>org.globsframework</groupId>
       <artifactId>globs</artifactId>
-      <version>2.0</version>
+      <version>3.0</version>
     </dependency>
     <dependency>
       <groupId>org.globsframework</groupId>
-      <artifactId>globs</artifactId>
-      <version>2.0</version>
-      <type>test-jar</type>
+      <artifactId>globs-generate</artifactId>
+      <version>3.0</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -77,25 +45,16 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>javax.json</groupId>
-      <artifactId>javax.json-api</artifactId>
-      <version>1.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish</groupId>
-      <artifactId>javax.json</artifactId>
-      <version>1.1</version>
-    </dependency>
-    <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
+      <artifactId>slf4j-simple</artifactId>
       <version>1.7.22</version>
     </dependency>
     <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>1.2.14</version>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.8.2</version>
     </dependency>
+
   </dependencies>
 
 </project>

@@ -1,0 +1,32 @@
+{
+  "typeName": "test local type",
+  "fields": [
+    {
+      "id": {
+        "type": "int",
+        "annotations": [
+          {
+            "typeName": "KeyAnnotation",
+            "index": 0
+          }
+        ]
+      }
+    },
+    {
+      "a different name": {
+        "type": "string",
+        "annotations": [
+          {
+            "typeName": "KeyAnnotation",
+            "index": 1
+          }
+        ]
+      }
+    },
+    {
+      "value": {
+        "type": "double"
+      }
+    }
+  ]
+}
