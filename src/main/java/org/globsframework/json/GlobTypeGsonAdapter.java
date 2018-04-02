@@ -1,5 +1,6 @@
 package org.globsframework.json;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
@@ -13,6 +14,7 @@ import org.globsframework.model.Glob;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,7 +26,8 @@ class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
     public GlobTypeGsonAdapter(boolean forceSort, GlobTypeResolver globTypeResolver) {
         this.forceSort = forceSort;
         this.globTypeResolver = globTypeResolver;
-        globTypeGsonDeserializer = new GlobTypeGsonDeserializer(new GlobGsonDeserializer(globTypeResolver));
+        globTypeGsonDeserializer = new GlobTypeGsonDeserializer(new GlobGsonDeserializer(new Gson(), globTypeResolver),
+                globTypeResolver);
     }
 
     @Override
@@ -115,6 +118,28 @@ class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
                     public void visitBlob(BlobField field) throws Exception {
                         writeField(field, GlobsGson.BLOB_TYPE, out);
                     }
+
+                    @Override
+                    public void visitGlob(GlobField field) throws Exception {
+                        writeField(field, GlobsGson.GLOB_TYPE, out, jsonWriter -> {
+                            try {
+                                jsonWriter.name("kind").value(field.getType().getName());
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void visitGlobArray(GlobArrayField field) throws Exception {
+                        writeField(field, GlobsGson.GLOB_ARRAY_TYPE, out, jsonWriter -> {
+                            try {
+                                jsonWriter.name("kind").value(field.getType().getName());
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                    }
                 });
             }
             out.endObject();
@@ -124,11 +149,17 @@ class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
     }
 
     private JsonWriter writeField(Field field, String type, JsonWriter out) throws IOException {
+        return writeField(field, type, out, jsonWriter -> {
+        });
+    }
+
+    private JsonWriter writeField(Field field, String type, JsonWriter out, Consumer<JsonWriter> append) throws IOException {
         out
                 .name(field.getName())
                 .beginObject()
                 .name(GlobsGson.FIELD_TYPE)
                 .value(type);
+        append.accept(out);
 
         writeAnnotations(out,
                 field.streamAnnotations()
@@ -155,13 +186,11 @@ class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
             }
             out.endArray();
         }
-
     }
 
     @Override
-    public GlobType read(JsonReader in) throws IOException {
+    public GlobType read(JsonReader in) {
         JsonParser jsonParser = new JsonParser();
         return globTypeGsonDeserializer.deserialize(jsonParser.parse(in));
     }
-
 }

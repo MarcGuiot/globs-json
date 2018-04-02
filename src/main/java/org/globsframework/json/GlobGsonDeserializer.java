@@ -19,10 +19,15 @@ import java.util.Base64;
 public class GlobGsonDeserializer {
     private static Logger LOGGER = LoggerFactory.getLogger(GlobGsonDeserializer.class);
     private final GlobTypeResolver globTypeResolver;
-    protected final static GSonVisitor GSON_VISITOR = new GSonVisitor();
+    private GSonVisitor gSonVisitor;
 
-    public GlobGsonDeserializer(GlobTypeResolver globTypeResolver) {
+    public GlobGsonDeserializer(Gson gson, GlobTypeResolver globTypeResolver) {
         this.globTypeResolver = globTypeResolver;
+        gSonVisitor = new GSonVisitor(gson, this);
+    }
+
+    public GSonVisitor getGSonVisitor() {
+        return gSonVisitor;
     }
 
     public Glob deserialize(JsonElement json) throws JsonParseException {
@@ -43,30 +48,31 @@ public class GlobGsonDeserializer {
         return instantiate;
     }
 
-    public static MutableGlob readGlob(JsonObject jsonObject, GlobType globType) {
+    private MutableGlob readGlob(JsonObject jsonObject, GlobType globType) {
         MutableGlob instantiate;
         instantiate = globType.instantiate();
         for (Field field : globType.getFields()) {
             JsonElement jsonElement = jsonObject.get(field.getName());
             if (jsonElement != null) {
-                field.safeVisit(GSON_VISITOR, jsonElement, instantiate);
+                field.safeVisit(gSonVisitor, jsonElement, instantiate);
             }
         }
         return instantiate;
     }
 
     static class GSonVisitor implements FieldVisitorWithTwoContext<JsonElement, FieldSetter> {
-        private Gson gson;
+        private final Gson gson;
+        private final GlobGsonDeserializer gsonDeserializer;
 
-        public GSonVisitor() {
-            gson = new Gson();
+        public GSonVisitor(Gson gson, GlobGsonDeserializer gsonDeserializer) {
+            this.gson = gson;
+            this.gsonDeserializer = gsonDeserializer;
         }
 
         public void visitInteger(IntegerField integerField, JsonElement element, FieldSetter fieldSetter) {
             fieldSetter.set(integerField, element.getAsInt());
         }
 
-        @Override
         public void visitIntegerArray(IntegerArrayField field, JsonElement element, FieldSetter fieldSetter) throws Exception {
             JsonArray asJsonArray = element.getAsJsonArray();
             int[] value = new int[asJsonArray.size()];
@@ -81,7 +87,6 @@ public class GlobGsonDeserializer {
             fieldSetter.set(doubleField, element.getAsDouble());
         }
 
-        @Override
         public void visitDoubleArray(DoubleArrayField field, JsonElement element, FieldSetter fieldSetter) throws Exception {
             JsonArray asJsonArray = element.getAsJsonArray();
             double[] value = new double[asJsonArray.size()];
@@ -110,7 +115,6 @@ public class GlobGsonDeserializer {
             }
         }
 
-        @Override
         public void visitStringArray(StringArrayField field, JsonElement arrayElements, FieldSetter fieldSetter) throws Exception {
             JsonArray asJsonArray = arrayElements.getAsJsonArray();
             String value[] = new String[asJsonArray.size()];
@@ -140,7 +144,6 @@ public class GlobGsonDeserializer {
             fieldSetter.set(booleanField, element.getAsBoolean());
         }
 
-        @Override
         public void visitBooleanArray(BooleanArrayField field, JsonElement element, FieldSetter fieldSetter) throws Exception {
             JsonArray asJsonArray = element.getAsJsonArray();
             boolean[] value = new boolean[asJsonArray.size()];
@@ -149,15 +152,12 @@ public class GlobGsonDeserializer {
                 value[i++] = jsonElement.getAsBoolean();
             }
             fieldSetter.set(field, value);
-
         }
 
-        @Override
         public void visitBigDecimal(BigDecimalField field, JsonElement element, FieldSetter fieldSetter) throws Exception {
             fieldSetter.set(field, element.getAsBigDecimal());
         }
 
-        @Override
         public void visitBigDecimalArray(BigDecimalArrayField field, JsonElement element, FieldSetter fieldSetter) throws Exception {
             JsonArray asJsonArray = element.getAsJsonArray();
             BigDecimal[] value = new BigDecimal[asJsonArray.size()];
@@ -173,7 +173,6 @@ public class GlobGsonDeserializer {
             fieldSetter.set(longField, element.getAsLong());
         }
 
-        @Override
         public void visitLongArray(LongArrayField field, JsonElement element, FieldSetter fieldSetter) throws Exception {
             JsonArray asJsonArray = element.getAsJsonArray();
             long[] value = new long[asJsonArray.size()];
@@ -184,12 +183,10 @@ public class GlobGsonDeserializer {
             fieldSetter.set(field, value);
         }
 
-        @Override
         public void visitDate(DateField field, JsonElement element, FieldSetter fieldSetter) throws Exception {
             fieldSetter.set(field, LocalDate.from(DateTimeFormatter.ISO_DATE.parse(element.getAsString())));
         }
 
-        @Override
         public void visitDateTime(DateTimeField field, JsonElement element, FieldSetter fieldSetter) throws Exception {
             fieldSetter.set(field, ZonedDateTime.from(DateTimeFormatter.ISO_DATE_TIME.parse(element.getAsString())));
         }
@@ -197,6 +194,20 @@ public class GlobGsonDeserializer {
         public void visitBlob(BlobField blobField, JsonElement element, FieldSetter fieldSetter) {
             fieldSetter.set(blobField,
                     Base64.getDecoder().decode(element.getAsString()));
+        }
+
+        public void visitGlob(GlobField field, JsonElement element, FieldSetter fieldSetter) throws Exception {
+            fieldSetter.set(field, gsonDeserializer.deserialize(element));
+        }
+
+        public void visitGlobArray(GlobArrayField field, JsonElement element, FieldSetter fieldSetter) throws Exception {
+            JsonArray asJsonArray = element.getAsJsonArray();
+            Glob[] value = new Glob[asJsonArray.size()];
+            int i = 0;
+            for (JsonElement jsonElement : asJsonArray) {
+                value[i++] = gsonDeserializer.deserialize(jsonElement);
+            }
+            fieldSetter.set(field, value);
         }
     }
 }

@@ -342,11 +342,18 @@ public class GlobsGsonAdapterTest {
             "  ],\n" +
             "  \"date\": \"2018-02-04\",\n" +
             "  \"dateTime\": \"2018-02-04T15:45:34.000001+01:00[Europe/Paris]\",\n" +
-            "  \"blob\": \"AwQ\\u003d\"\n" +
+            "  \"blob\": \"AwQ\\u003d\"\n," +
+            "  \"glob\":{\"_kind\":\"histo\",\"value\":3.0,\"date\":17000}," +
+            "  \"globArray\":[{\"_kind\":\"histo\",\"value\":3.0,\"date\":17000},{\"_kind\":\"histo\",\"value\":2.8,\"date\":17001},{\"_kind\":\"histo\",\"value\":2.7,\"date\":17002}]" +
             "}";
 
     @Test
     public void readAllFieldType() {
+        GlobTypeBuilder innerGlobTypeBuilder = DefaultGlobTypeBuilder.init("histo");
+        DoubleField valueField = innerGlobTypeBuilder.declareDoubleField("value");
+        IntegerField dateField = innerGlobTypeBuilder.declareIntegerField("date");
+        GlobType innerType = innerGlobTypeBuilder.get();
+
         GlobTypeBuilder globTypeBuilder = DefaultGlobTypeBuilder.init("AllType");
         IntegerField anInt = globTypeBuilder.declareIntegerField("int");
         IntegerArrayField intArray = globTypeBuilder.declareIntegerArrayField("intArray");
@@ -367,9 +374,11 @@ public class GlobsGsonAdapterTest {
         DateField date = globTypeBuilder.declareDateField("date");
         DateTimeField dateTime = globTypeBuilder.declareDateTimeField("dateTime");
         BlobField blob = globTypeBuilder.declareBlobField("blob");
+        GlobField globField = globTypeBuilder.declareGlobField("glob", innerType);
+        GlobArrayField globArrayField = globTypeBuilder.declareGlobArrayField("globArray", innerType);
         GlobType globType = globTypeBuilder.get();
 
-        Gson gson = init(globType);
+        Gson gson = init(globType, innerType);
 
         //write-read globType
         String s = gson.toJson(globType);
@@ -401,7 +410,10 @@ public class GlobsGsonAdapterTest {
                 .set(date, LocalDate.of(2018, 2, 4))
                 .set(dateTime, ZonedDateTime.of(2018, 2, 4, 15, 45, 34, 1000, ZoneId.of("Europe/Paris")))
                 .set(blob, new byte[]{3, 4})
-        ;
+                .set(globField, innerType.instantiate().set(valueField, 3).set(dateField, 17000))
+                .set(globArrayField, new Glob[] {innerType.instantiate().set(valueField, 3).set(dateField, 17000),
+                        innerType.instantiate().set(valueField, 2.8).set(dateField, 17001),
+                        innerType.instantiate().set(valueField, 2.7).set(dateField, 17002)});
 
         String jsonOutput = gson.toJson(instantiate);
         System.out.println("GlobsGsonAdapterTest.readAllFieldType " + jsonOutput);

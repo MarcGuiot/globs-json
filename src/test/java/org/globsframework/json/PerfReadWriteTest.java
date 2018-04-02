@@ -23,6 +23,7 @@ public class PerfReadWriteTest {
 
     static {
         System.setProperty("org.globsframework.builder", "org.globsframework.model.generator.GeneratorGlobFactoryService");
+        System.setProperty("globsframework.field.no.check", "true");
     }
 
     @Test
@@ -48,8 +49,29 @@ public class PerfReadWriteTest {
         String s = "";
         s = write(collect, gson, s);
         s = write(collect, gson, s);
+        s = write(collect, gson, s);
+        s = write(collect, gson, s);
+        s = write(collect, gson, s);
+        s = write(collect, gson, s);
+        s = write(collect, gson, s);
         read(gson, s);
         read(gson, s);
+        read(gson, s);
+        read(gson, s);
+        read(gson, s);
+        read(gson, s);
+        read(gson, s);
+        read(gson, s);
+    }
+
+    private String write(List<MutableGlob> collect, Gson gson, String s) {
+        long start = System.nanoTime();
+        for (int i = 0 ; i < 1000; i++) {
+            s = gson.toJson(collect);
+        }
+        long end = System.nanoTime();
+        System.out.println("write " + (end - start) / 1000000. + "ms");  // 1100ms puis 600ms
+        return s;
     }
 
     private void read(Gson gson, String s) {
@@ -59,16 +81,6 @@ public class PerfReadWriteTest {
             Assert.assertEquals(globList.size(), 1000);
         }
         long end = System.nanoTime();
-        System.out.println("read " + (end - start) / 1000000. + "ms");
-    }
-
-    private String write(List<MutableGlob> collect, Gson gson, String s) {
-        long start = System.nanoTime();
-        for (int i = 0 ; i < 1000; i++) {
-            s = gson.toJson(collect);
-        }
-        long end = System.nanoTime();
-        System.out.println("write " + (end - start) / 1000000. + "ms");
-        return s;
+        System.out.println("read " + (end - start) / 1000000. + "ms");  // 600ms
     }
 }

@@ -24,9 +24,11 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
     private GlobTypeResolver resolver;
     private Gson gson = new Gson();
     private final ReadJsonWithReaderFieldVisitor readJsonWithReaderFieldVisitor = new ReadJsonWithReaderFieldVisitor();
+    private final GlobGsonDeserializer globGsonDeserializer;
 
     public GlobGsonAdapter(GlobTypeResolver resolver) {
         this.resolver = resolver;
+        globGsonDeserializer = new GlobGsonDeserializer(gson, this.resolver);
     }
 
     public void write(JsonWriter out, Glob value) throws IOException {
@@ -37,7 +39,7 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
         out.beginObject();
         GlobType type = value.getType();
         out.name(GlobsGson.KIND_NAME).value(type.getName());
-        value.safeAccept(new JsonFieldValueVisitor(out));
+        value.safeAccept(new JsonFieldValueVisitor(this, out));
         out.endObject();
     }
 
@@ -74,7 +76,7 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
         for (Map.Entry<String, JsonElement> stringJsonElementEntry : values.entrySet()) {
             Field field = type.findField(stringJsonElementEntry.getKey());
             if (field != null) {
-                field.safeVisit(GlobGsonDeserializer.GSON_VISITOR, stringJsonElementEntry.getValue(), instantiate);
+                field.safeVisit(globGsonDeserializer.getGSonVisitor(), stringJsonElementEntry.getValue(), instantiate);
             }
         }
         return instantiate;
@@ -93,9 +95,11 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
     }
 
     private static class JsonFieldValueVisitor implements FieldValueVisitor {
-        private JsonWriter jsonWriter;
+        private final GlobGsonAdapter globGsonAdapter;
+        private final JsonWriter jsonWriter;
 
-        public JsonFieldValueVisitor(JsonWriter jsonWriter) {
+        public JsonFieldValueVisitor(GlobGsonAdapter globGsonAdapter, JsonWriter jsonWriter) {
+            this.globGsonAdapter = globGsonAdapter;
             this.jsonWriter = jsonWriter;
         }
 
@@ -247,6 +251,26 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             if (value != null) {
                 jsonWriter.name(field.getName());
                 jsonWriter.value(Base64.getEncoder().encodeToString(value));
+            }
+        }
+
+        @Override
+        public void visitGlob(GlobField field, Glob value) throws Exception {
+            if (value != null) {
+                jsonWriter.name(field.getName());
+                globGsonAdapter.write(jsonWriter, value);
+            }
+        }
+
+        @Override
+        public void visitGlobArray(GlobArrayField field, Glob[] value) throws Exception {
+            if (value != null) {
+                jsonWriter.name(field.getName());
+                jsonWriter.beginArray();
+                for (Glob v : value) {
+                    globGsonAdapter.write(jsonWriter, v);
+                }
+                jsonWriter.endArray();
             }
         }
     }
@@ -418,6 +442,26 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
         @Override
         public void visitBlob(BlobField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             mutableGlob.set(field, Base64.getDecoder().decode(jsonReader.nextString()));
+        }
+
+        @Override
+        public void visitGlob(GlobField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
+            mutableGlob.set(field, read(jsonReader));
+        }
+
+        @Override
+        public void visitGlobArray(GlobArrayField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
+            jsonReader.beginArray();
+            Glob[] values = new Glob[16];
+            int count = 0;
+            while (jsonReader.peek() != JsonToken.END_ARRAY) {
+                if (values.length == count) {
+                    values = Arrays.copyOf(values, values.length * 2);
+                }
+                values[count++] = read(jsonReader);
+            }
+            jsonReader.endArray();
+            mutableGlob.set(field, Arrays.copyOf(values, count));
         }
 
     }

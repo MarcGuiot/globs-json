@@ -27,6 +27,8 @@ public class GlobsGson {
     public static final String BIG_DECIMAL_TYPE = "bigDecimal";
     public static final String BIG_DECIMAL_ARRAY_TYPE = "bigDecimalArray";
     public static final String BLOB_TYPE = "blob";
+    public static final String GLOB_TYPE = "glob";
+    public static final String GLOB_ARRAY_TYPE = "globArray";
 
     private GlobsGson() {
     }

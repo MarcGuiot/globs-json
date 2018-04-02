@@ -13,9 +13,11 @@ import java.util.*;
 class GlobTypeGsonDeserializer {
     private static Logger LOGGER = LoggerFactory.getLogger(GlobGsonDeserializer.class);
     private final GlobGsonDeserializer globGsonDeserializer;
+    private GlobTypeResolver globTypeResolver;
 
-    GlobTypeGsonDeserializer(GlobGsonDeserializer globGsonDeserializer) {
+    GlobTypeGsonDeserializer(GlobGsonDeserializer globGsonDeserializer, GlobTypeResolver globTypeResolver) {
         this.globGsonDeserializer = globGsonDeserializer;
+        this.globTypeResolver = globTypeResolver;
     }
 
     GlobType deserialize(JsonElement json) throws JsonParseException {
@@ -100,6 +102,12 @@ class GlobTypeGsonDeserializer {
                 break;
             case GlobsGson.BLOB_TYPE:
                 globTypeBuilder.declareBlobField(attrName, globList);
+                break;
+            case GlobsGson.GLOB_TYPE:
+                globTypeBuilder.declareGlobField(attrName, globTypeResolver.get(fieldContent.get("kind").getAsString()), globList);
+                break;
+            case GlobsGson.GLOB_ARRAY_TYPE:
+                globTypeBuilder.declareGlobArrayField(attrName, globTypeResolver.get(fieldContent.get("kind").getAsString()), globList);
                 break;
             default:
                 throw new RuntimeException(type + " not managed");
