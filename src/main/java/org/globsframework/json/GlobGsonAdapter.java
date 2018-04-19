@@ -90,6 +90,9 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             if (field != null) {
                 field.safeVisit(readJsonWithReaderFieldVisitor, instantiate, in);
             }
+            else {
+                in.skipValue();
+            }
         }
         return instantiate;
     }
@@ -128,7 +131,6 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             }
         }
 
-        @Override
         public void visitDoubleArray(DoubleArrayField field, double[] value) throws Exception {
             if (value != null) {
                 jsonWriter.name(field.getName());
@@ -140,7 +142,6 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             }
         }
 
-        @Override
         public void visitBigDecimal(BigDecimalField field, BigDecimal value) throws Exception {
             if (value != null) {
                 jsonWriter.name(field.getName());
@@ -148,7 +149,6 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             }
         }
 
-        @Override
         public void visitBigDecimalArray(BigDecimalArrayField field, BigDecimal[] value) throws Exception {
             if (value != null) {
                 jsonWriter.name(field.getName());
@@ -160,7 +160,6 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             }
         }
 
-        @Override
         public void visitString(StringField field, String value) throws Exception {
             if (value != null) {
                 jsonWriter.name(field.getName());
@@ -172,7 +171,6 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             }
         }
 
-        @Override
         public void visitStringArray(StringArrayField field, String[] value) throws Exception {
             if (value != null) {
                 jsonWriter.name(field.getName());
@@ -189,7 +187,6 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             }
         }
 
-        @Override
         public void visitBoolean(BooleanField field, Boolean value) throws Exception {
             if (value != null) {
                 jsonWriter.name(field.getName());
@@ -197,7 +194,6 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             }
         }
 
-        @Override
         public void visitBooleanArray(BooleanArrayField field, boolean[] value) throws Exception {
             if (value != null) {
                 jsonWriter.name(field.getName());
@@ -209,7 +205,6 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             }
         }
 
-        @Override
         public void visitLong(LongField field, Long value) throws Exception {
             if (value != null) {
                 jsonWriter.name(field.getName());
@@ -217,7 +212,6 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             }
         }
 
-        @Override
         public void visitLongArray(LongArrayField field, long[] value) throws Exception {
             if (value != null) {
                 jsonWriter.name(field.getName());
@@ -229,7 +223,6 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             }
         }
 
-        @Override
         public void visitDate(DateField field, LocalDate value) throws Exception {
             if (value != null) {
                 jsonWriter.name(field.getName());
@@ -237,16 +230,13 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             }
         }
 
-        @Override
         public void visitDateTime(DateTimeField field, ZonedDateTime value) throws Exception {
             if (value != null) {
                 jsonWriter.name(field.getName());
                 jsonWriter.value(DateTimeFormatter.ISO_DATE_TIME.format(value));
             }
-
         }
 
-        @Override
         public void visitBlob(BlobField field, byte[] value) throws Exception {
             if (value != null) {
                 jsonWriter.name(field.getName());
@@ -254,21 +244,24 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             }
         }
 
-        @Override
         public void visitGlob(GlobField field, Glob value) throws Exception {
             if (value != null) {
                 jsonWriter.name(field.getName());
-                globGsonAdapter.write(jsonWriter, value);
+                jsonWriter.beginObject();
+                value.safeAccept(new JsonFieldValueVisitor(globGsonAdapter, jsonWriter));
+                jsonWriter.endObject();
             }
         }
 
-        @Override
         public void visitGlobArray(GlobArrayField field, Glob[] value) throws Exception {
             if (value != null) {
                 jsonWriter.name(field.getName());
                 jsonWriter.beginArray();
+                JsonFieldValueVisitor functor = new JsonFieldValueVisitor(globGsonAdapter, jsonWriter);
                 for (Glob v : value) {
-                    globGsonAdapter.write(jsonWriter, v);
+                    jsonWriter.beginObject();
+                    v.safeAccept(functor);
+                    jsonWriter.endObject();
                 }
                 jsonWriter.endArray();
             }
@@ -276,12 +269,11 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
     }
 
     private class ReadJsonWithReaderFieldVisitor implements FieldVisitorWithTwoContext<MutableGlob, JsonReader> {
-        @Override
+
         public void visitInteger(IntegerField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             mutableGlob.set(field, jsonReader.nextInt());
         }
 
-        @Override
         public void visitIntegerArray(IntegerArrayField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             jsonReader.beginArray();
             int[] values = new int[16];
@@ -296,12 +288,10 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             mutableGlob.set(field, Arrays.copyOf(values, count));
         }
 
-        @Override
         public void visitDouble(DoubleField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             mutableGlob.set(field, jsonReader.nextDouble());
         }
 
-        @Override
         public void visitDoubleArray(DoubleArrayField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             jsonReader.beginArray();
             double[] values = new double[16];
@@ -316,7 +306,6 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             mutableGlob.set(field, Arrays.copyOf(values, count));
         }
 
-        @Override
         public void visitString(StringField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             JsonToken peek = jsonReader.peek();
             if (peek != JsonToken.NULL) {
@@ -336,10 +325,8 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
                     mutableGlob.set(field, jsonReader.nextString());
                 }
             }
-
         }
 
-        @Override
         public void visitStringArray(StringArrayField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             jsonReader.beginArray();
             String[] values = new String[16];
@@ -368,12 +355,10 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             mutableGlob.set(field, Arrays.copyOf(values, count));
         }
 
-        @Override
         public void visitBoolean(BooleanField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             mutableGlob.set(field, jsonReader.nextBoolean());
         }
 
-        @Override
         public void visitBooleanArray(BooleanArrayField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             jsonReader.beginArray();
             boolean[] values = new boolean[16];
@@ -388,12 +373,10 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             mutableGlob.set(field, Arrays.copyOf(values, count));
         }
 
-        @Override
         public void visitBigDecimal(BigDecimalField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             mutableGlob.set(field, new BigDecimal(jsonReader.nextString()));
         }
 
-        @Override
         public void visitBigDecimalArray(BigDecimalArrayField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             jsonReader.beginArray();
             BigDecimal[] values = new BigDecimal[16];
@@ -408,12 +391,10 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             mutableGlob.set(field, Arrays.copyOf(values, count));
         }
 
-        @Override
         public void visitLong(LongField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             mutableGlob.set(field, jsonReader.nextLong());
         }
 
-        @Override
         public void visitLongArray(LongArrayField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             jsonReader.beginArray();
             long[] values = new long[16];
@@ -428,28 +409,24 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             mutableGlob.set(field, Arrays.copyOf(values, count));
         }
 
-        @Override
         public void visitDate(DateField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             mutableGlob.set(field, LocalDate.from(DateTimeFormatter.ISO_DATE.parse(jsonReader.nextString())));
         }
 
-        @Override
         public void visitDateTime(DateTimeField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             mutableGlob.set(field, ZonedDateTime.from(DateTimeFormatter.ISO_DATE_TIME.parse(jsonReader.nextString())));
-
         }
 
-        @Override
         public void visitBlob(BlobField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             mutableGlob.set(field, Base64.getDecoder().decode(jsonReader.nextString()));
         }
 
-        @Override
         public void visitGlob(GlobField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
-            mutableGlob.set(field, read(jsonReader));
+            jsonReader.beginObject();
+            mutableGlob.set(field, readFieldsWithReader(jsonReader, field.getType()));
+            jsonReader.endObject();
         }
 
-        @Override
         public void visitGlobArray(GlobArrayField field, MutableGlob mutableGlob, JsonReader jsonReader) throws Exception {
             jsonReader.beginArray();
             Glob[] values = new Glob[16];
@@ -458,11 +435,12 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
                 if (values.length == count) {
                     values = Arrays.copyOf(values, values.length * 2);
                 }
-                values[count++] = read(jsonReader);
+                jsonReader.beginObject();
+                values[count++] = readFieldsWithReader(jsonReader, field.getType());
+                jsonReader.endObject();
             }
             jsonReader.endArray();
             mutableGlob.set(field, Arrays.copyOf(values, count));
         }
-
     }
 }

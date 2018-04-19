@@ -343,8 +343,8 @@ public class GlobsGsonAdapterTest {
             "  \"date\": \"2018-02-04\",\n" +
             "  \"dateTime\": \"2018-02-04T15:45:34.000001+01:00[Europe/Paris]\",\n" +
             "  \"blob\": \"AwQ\\u003d\"\n," +
-            "  \"glob\":{\"_kind\":\"histo\",\"value\":3.0,\"date\":17000}," +
-            "  \"globArray\":[{\"_kind\":\"histo\",\"value\":3.0,\"date\":17000},{\"_kind\":\"histo\",\"value\":2.8,\"date\":17001},{\"_kind\":\"histo\",\"value\":2.7,\"date\":17002}]" +
+            "  \"glob\":{\"value\":3.0,\"date\":17000}," +
+            "  \"globArray\":[{\"value\":3.0,\"date\":17000},{\"value\":2.8,\"date\":17001},{\"value\":2.7,\"date\":17002}]" +
             "}";
 
     @Test
@@ -434,5 +434,19 @@ public class GlobsGsonAdapterTest {
                             field.toString(glob.getValue(field)) + "->" + field.toString(instantiate.getValue(field)),
                     field.valueEqual(glob.getValue(field), instantiate.getValue(field)));
         }
+    }
+
+    @Test
+    public void withUnknownField() {
+        Gson gson = init();
+        Glob glob = gson.fromJson("{\"_kind\": \"test local type\", \"a different name\": \"my name\", \"PI\": 3.3}", Glob.class);
+        Assert.assertEquals(glob.get(LocalType.NAME),"my name");
+
+        glob = gson.fromJson("{\"_kind\": \"test local type\", \"a different name\": \"my name\", \"PI\": { \"O\":3.3 }}", Glob.class);
+        Assert.assertEquals(glob.get(LocalType.NAME),"my name");
+
+        glob = gson.fromJson("{\"_kind\": \"test local type\", \"a different name\": \"my name\", \"PI\": []}", Glob.class);
+        Assert.assertEquals(glob.get(LocalType.NAME),"my name");
+
     }
 }
