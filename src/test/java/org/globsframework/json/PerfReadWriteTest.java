@@ -81,6 +81,6 @@ public class PerfReadWriteTest {
             Assert.assertEquals(globList.size(), 1000);
         }
         long end = System.nanoTime();
-        System.out.println("read " + (end - start) / 1000000. + "ms");  // 600ms
+        System.out.println("read " + (end - start) / 1000000. + "ms => " + ((1000. * 1000.) / ((end - start) / 1000000.) * 1000.) + " objects/s");  // 600ms (1.7Millions par second)
     }
 }

@@ -29,10 +29,15 @@ public class GlobsGson {
     public static final String BLOB_TYPE = "blob";
     public static final String GLOB_TYPE = "glob";
     public static final String GLOB_ARRAY_TYPE = "globArray";
+    public static final String GLOB_TYPE_KIND = "kind";
+    public static final String GLOB_UNION_TYPE = "globUnion";
+    public static final String GLOB_UNION_ARRAY_TYPE = "globUnionArray";
+    public static final String GLOB_UNION_KINDS = "kinds";
 
     private GlobsGson() {
     }
 
+    // WARN : GlobTypeGsonAdapter is state full : it keep the
     static public GsonBuilder createBuilder(GlobTypeResolver globTypeResolver) {
         return new GsonBuilder()
               .registerTypeHierarchyAdapter(GlobType.class, new GlobTypeGsonAdapter(false, globTypeResolver))

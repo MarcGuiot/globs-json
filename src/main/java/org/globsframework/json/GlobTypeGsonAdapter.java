@@ -1,6 +1,5 @@
 package org.globsframework.json;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
@@ -26,11 +25,9 @@ class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
     public GlobTypeGsonAdapter(boolean forceSort, GlobTypeResolver globTypeResolver) {
         this.forceSort = forceSort;
         this.globTypeResolver = globTypeResolver;
-        globTypeGsonDeserializer = new GlobTypeGsonDeserializer(new GlobGsonDeserializer(new Gson(), globTypeResolver),
-                globTypeResolver);
+        globTypeGsonDeserializer = new GlobTypeGsonDeserializer(new GlobGSonDeserializer(), globTypeResolver);
     }
 
-    @Override
     public void write(JsonWriter out, GlobType type) throws IOException {
         if (type == null) {
             out.nullValue();
@@ -44,97 +41,127 @@ class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
                     .beginObject();
             for (Field field : type.getFields()) {
                 field.safeVisit(new FieldVisitor() {
-                    @Override
+
                     public void visitInteger(IntegerField field) throws Exception {
                         writeField(field, GlobsGson.INT_TYPE, out);
                     }
 
-                    @Override
+
                     public void visitIntegerArray(IntegerArrayField field) throws Exception {
                         writeField(field, GlobsGson.INT_ARRAY_TYPE, out);
                     }
 
-                    @Override
+
                     public void visitDouble(DoubleField field) throws Exception {
                         writeField(field, GlobsGson.DOUBLE_TYPE, out);
                     }
 
-                    @Override
+
                     public void visitDoubleArray(DoubleArrayField field) throws Exception {
                         writeField(field, GlobsGson.DOUBLE_ARRAY_TYPE, out);
                     }
 
-                    @Override
+
                     public void visitBigDecimal(BigDecimalField field) throws Exception {
                         writeField(field, GlobsGson.BIG_DECIMAL_TYPE, out);
                     }
 
-                    @Override
                     public void visitBigDecimalArray(BigDecimalArrayField field) throws Exception {
                         writeField(field, GlobsGson.BIG_DECIMAL_ARRAY_TYPE, out);
                     }
 
-                    @Override
+
                     public void visitString(StringField field) throws Exception {
                         writeField(field, GlobsGson.STRING_TYPE, out);
                     }
 
-                    @Override
+
                     public void visitStringArray(StringArrayField field) throws Exception {
                         writeField(field, GlobsGson.STRING_ARRAY_TYPE, out);
                     }
 
-                    @Override
+
                     public void visitBoolean(BooleanField field) throws Exception {
                         writeField(field, GlobsGson.BOOLEAN_TYPE, out);
                     }
 
-                    @Override
+
                     public void visitBooleanArray(BooleanArrayField field) throws Exception {
                         writeField(field, GlobsGson.BOOLEAN_ARRAY_TYPE, out);
                     }
 
-                    @Override
+
                     public void visitLong(LongField field) throws Exception {
                         writeField(field, GlobsGson.LONG_TYPE, out);
                     }
 
-                    @Override
+
                     public void visitLongArray(LongArrayField field) throws Exception {
                         writeField(field, GlobsGson.LONG_ARRAY_TYPE, out);
                     }
 
-                    @Override
+
                     public void visitDate(DateField field) throws Exception {
                         writeField(field, GlobsGson.DATE_TYPE, out);
                     }
 
-                    @Override
+
                     public void visitDateTime(DateTimeField field) throws Exception {
                         writeField(field, GlobsGson.DATE_TIME_TYPE, out);
                     }
 
-                    @Override
+
                     public void visitBlob(BlobField field) throws Exception {
                         writeField(field, GlobsGson.BLOB_TYPE, out);
                     }
 
-                    @Override
+
                     public void visitGlob(GlobField field) throws Exception {
                         writeField(field, GlobsGson.GLOB_TYPE, out, jsonWriter -> {
                             try {
-                                jsonWriter.name("kind").value(field.getType().getName());
+                                jsonWriter.name(GlobsGson.GLOB_TYPE_KIND).value(field.getType().getName());
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }
                         });
                     }
 
-                    @Override
                     public void visitGlobArray(GlobArrayField field) throws Exception {
                         writeField(field, GlobsGson.GLOB_ARRAY_TYPE, out, jsonWriter -> {
                             try {
-                                jsonWriter.name("kind").value(field.getType().getName());
+                                jsonWriter.name(GlobsGson.GLOB_TYPE_KIND).value(field.getType().getName());
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                    }
+
+                    public void visitUnionGlob(GlobUnionField field) throws Exception {
+                        writeField(field, GlobsGson.GLOB_UNION_TYPE, out, jsonWriter -> {
+                            try {
+                                jsonWriter
+                                        .name(GlobsGson.GLOB_UNION_KINDS)
+                                        .beginArray();
+                                for (GlobType globType : field.getTypes()) {
+                                    jsonWriter.value(globType.getName());
+                                }
+                                jsonWriter.endArray();
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                    }
+
+                    public void visitUnionGlobArray(GlobArrayUnionField field) throws Exception {
+                        writeField(field, GlobsGson.GLOB_UNION_ARRAY_TYPE, out, jsonWriter -> {
+                            try {
+                                jsonWriter
+                                        .name(GlobsGson.GLOB_UNION_KINDS)
+                                        .beginArray();
+                                for (GlobType globType : field.getTypes()) {
+                                    jsonWriter.value(globType.getName());
+                                }
+                                jsonWriter.endArray();
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }
@@ -188,7 +215,7 @@ class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
         }
     }
 
-    @Override
+
     public GlobType read(JsonReader in) {
         JsonParser jsonParser = new JsonParser();
         return globTypeGsonDeserializer.deserialize(jsonParser.parse(in));

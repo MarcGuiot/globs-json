@@ -17,6 +17,9 @@ import org.globsframework.model.MutableGlob;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -115,6 +118,16 @@ public class GlobsGsonAdapterTest {
     }
 
     @Test
+    public void readWriteGlobTypeUsingJsonTree() throws Exception {
+        Gson gson = init();
+        JsonElement json = gson.toJsonTree(LocalType.TYPE);
+        GlobType type = gson.fromJson(json, GlobType.class);
+        Assert.assertEquals(LocalType.TYPE.getName(), type.getName());
+        Assert.assertEquals(LocalType.TYPE.getFieldCount(), type.getFieldCount());
+        Assert.assertEquals(gson.toJson(LocalType.TYPE), gson.toJson(type));
+    }
+
+    @Test
     public void readWriteGlob() throws Exception {
         MutableGlob instantiate = LocalType.TYPE.instantiate();
         MutableGlob glob = instantiate.set(LocalType.ID, 1)
@@ -163,11 +176,7 @@ public class GlobsGsonAdapterTest {
     }
 
     public static void assertEquivalent(String expected, String actual) {
-        JsonParser jsonParser = new JsonParser();
-        JsonElement expectedTree = jsonParser.parse(expected);
-        JsonElement actualTree = jsonParser.parse(actual);
-        Gson gson = new Gson();
-        Assert.assertEquals(gson.toJson(expectedTree), gson.toJson(actualTree));
+        Assert.assertEquals(GSonUtils.normalize(expected), GSonUtils.normalize(actual));
     }
 
     @Test
@@ -366,7 +375,7 @@ public class GlobsGsonAdapterTest {
         StringField jsonArrayString = globTypeBuilder.declareStringField("JsonArrayString", IsJsonContentType.UNIQUE_GLOB);
         StringArrayField jsonArrayStringArray = globTypeBuilder.declareStringArrayField("JsonArrayStringArray", IsJsonContentType.UNIQUE_GLOB);
         LongField aLong = globTypeBuilder.declareLongField("long");
-        LongArrayField longArray = globTypeBuilder.declareArrayLongField("longArray");
+        LongArrayField longArray = globTypeBuilder.declareLongArrayField("longArray");
         BigDecimalField bigDecimal = globTypeBuilder.declareBigDecimalField("bigDecimal");
         BigDecimalArrayField bigDecimalArray = globTypeBuilder.declareBigDecimalArrayField("bigDecimalArray");
         DoubleField aDouble = globTypeBuilder.declareDoubleField("double");
@@ -431,7 +440,7 @@ public class GlobsGsonAdapterTest {
         fields = globType.getFields();
         for (Field field : fields) {
             Assert.assertTrue(field.getName() + " : " +
-                            field.toString(glob.getValue(field)) + "->" + field.toString(instantiate.getValue(field)),
+                            field.toString(glob.getValue(field), "") + "->" + field.toString(instantiate.getValue(field), ""),
                     field.valueEqual(glob.getValue(field), instantiate.getValue(field)));
         }
     }
@@ -448,5 +457,36 @@ public class GlobsGsonAdapterTest {
         glob = gson.fromJson("{\"_kind\": \"test local type\", \"a different name\": \"my name\", \"PI\": []}", Glob.class);
         Assert.assertEquals(glob.get(LocalType.NAME),"my name");
 
+    }
+
+    public static class ComplexClassName {
+        public static GlobType TYPE;
+
+        public static StringField DATA;
+
+        static {
+            GlobTypeLoaderFactory.create(ComplexClassName.class, "#$\"\\é&à@").load();
+        }
+    }
+
+    @Test
+    public void withCharacterToEscape() {
+        Gson gson = GlobsGson.create(name -> null);
+        String jsonType = gson.toJson(ComplexClassName.TYPE);
+        Assert.assertEquals(jsonType, "{\"kind\":\"#$\\\"\\\\é\\u0026à@\",\"fields\":{\"data\":{\"type\":\"string\"}}}");
+
+        GlobType globType = gson.fromJson(jsonType, GlobType.class);
+        Assert.assertEquals(ComplexClassName.TYPE.getName(),globType.getName());
+    }
+
+    @Test
+    public void failParse() throws UnsupportedEncodingException {
+        Gson gson = GlobsGson.create(name -> null);
+        String jsonType = "{\"kind\":\"with \\u0026éè\",\"fields\":{\"name\":{\"type\":\"string\"}}}";
+        JsonElement root = new JsonParser().parse(new InputStreamReader(new ByteArrayInputStream(jsonType.getBytes("UTF-8")), "UTF-8"));
+
+        root.getAsJsonObject();
+        GlobType globType = gson.fromJson(jsonType, GlobType.class);
+        Assert.assertEquals("with &éè", globType.getName());
     }
 }

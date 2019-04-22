@@ -9,29 +9,43 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 class GlobTypeGsonDeserializer {
-    private static Logger LOGGER = LoggerFactory.getLogger(GlobGsonDeserializer.class);
-    private final GlobGsonDeserializer globGsonDeserializer;
-    private GlobTypeResolver globTypeResolver;
+    private static Logger LOGGER = LoggerFactory.getLogger(GlobGSonDeserializer.class);
+    private final GlobGSonDeserializer globGSonDeserializer;
+    private final GlobTypeResolver globTypeResolver;
+    private final Map<String, GlobType> types = new ConcurrentHashMap<>(); // pour gérer la recursivitée liée au Union/GlobField
 
-    GlobTypeGsonDeserializer(GlobGsonDeserializer globGsonDeserializer, GlobTypeResolver globTypeResolver) {
-        this.globGsonDeserializer = globGsonDeserializer;
-        this.globTypeResolver = globTypeResolver;
+    GlobTypeGsonDeserializer(GlobGSonDeserializer globGSonDeserializer, GlobTypeResolver globTypeResolver) {
+        this.globGSonDeserializer = globGSonDeserializer;
+        this.globTypeResolver = name -> {
+            GlobType globType = types.get(name);
+            if (globType != null) {
+                return globType;
+            }
+            return globTypeResolver.get(name);
+        };
     }
 
     GlobType deserialize(JsonElement json) throws JsonParseException {
         if (json == null || json instanceof JsonNull) {
             return null;
         }
+        Runnable clean = () -> {};
         try {
             JsonObject jsonObject = (JsonObject) json;
             JsonElement typeElement = jsonObject.get(GlobsGson.TYPE_NAME);
             if (typeElement == null) {
-                throw new RuntimeException("Missing " + GlobsGson.TYPE_NAME + " missing");
+                throw new RuntimeException("Missing " + GlobsGson.TYPE_NAME + " missing on " + jsonObject);
             }
             String name = typeElement.getAsString();
             GlobTypeBuilder globTypeBuilder = DefaultGlobTypeBuilder.init(name);
+            GlobType globType = globTypeBuilder.unCompleteType();
+            types.put(name, globType);
+            clean = () -> types.remove(name);
             JsonElement fields = jsonObject.get(GlobsGson.FIELDS);
             if (fields != null) {
                 if (fields instanceof JsonObject) {
@@ -49,6 +63,8 @@ class GlobTypeGsonDeserializer {
             Gson gson = new Gson();
             LOGGER.error("Fail to parse : " + gson.toJson(json));
             throw e;
+        } finally {
+            clean.run();
         }
     }
 
@@ -86,7 +102,7 @@ class GlobTypeGsonDeserializer {
                 globTypeBuilder.declareLongField(attrName, globList);
                 break;
             case GlobsGson.LONG_ARRAY_TYPE:
-                globTypeBuilder.declareArrayLongField(attrName, globList);
+                globTypeBuilder.declareLongArrayField(attrName, globList);
                 break;
             case GlobsGson.BIG_DECIMAL_TYPE:
                 globTypeBuilder.declareBigDecimalField(attrName, globList);
@@ -104,11 +120,27 @@ class GlobTypeGsonDeserializer {
                 globTypeBuilder.declareBlobField(attrName, globList);
                 break;
             case GlobsGson.GLOB_TYPE:
-                globTypeBuilder.declareGlobField(attrName, globTypeResolver.get(fieldContent.get("kind").getAsString()), globList);
+                globTypeBuilder.declareGlobField(attrName, globTypeResolver.get(fieldContent.get(GlobsGson.GLOB_TYPE_KIND).getAsString()), globList);
                 break;
             case GlobsGson.GLOB_ARRAY_TYPE:
-                globTypeBuilder.declareGlobArrayField(attrName, globTypeResolver.get(fieldContent.get("kind").getAsString()), globList);
+                globTypeBuilder.declareGlobArrayField(attrName, globTypeResolver.get(fieldContent.get(GlobsGson.GLOB_TYPE_KIND).getAsString()), globList);
                 break;
+            case GlobsGson.GLOB_UNION_TYPE: {
+                JsonArray kind = fieldContent.get(GlobsGson.GLOB_UNION_KINDS).getAsJsonArray();
+                globTypeBuilder.declareGlobUnionField(attrName,
+                        StreamSupport.stream(Spliterators.spliterator(kind.iterator(), kind.size(), 0), false)
+                                .map(JsonElement::getAsString)
+                                .map(globTypeResolver::get).collect(Collectors.toList()), globList);
+                break;
+            }
+            case GlobsGson.GLOB_UNION_ARRAY_TYPE: {
+                JsonArray kind = fieldContent.get(GlobsGson.GLOB_UNION_KINDS).getAsJsonArray();
+                globTypeBuilder.declareGlobUnionArrayField(attrName,
+                        StreamSupport.stream(Spliterators.spliterator(kind.iterator(), kind.size(), 0), false)
+                                .map(JsonElement::getAsString)
+                                .map(globTypeResolver::get).collect(Collectors.toList()), globList);
+                break;
+            }
             default:
                 throw new RuntimeException(type + " not managed");
         }
@@ -121,7 +153,7 @@ class GlobTypeGsonDeserializer {
             globList = new ArrayList<>();
             for (JsonElement annotation : annotations) {
                 if (annotation != null) {
-                    globList.add(globGsonDeserializer.deserialize(annotation));
+                    globList.add(globGSonDeserializer.deserialize(annotation, globTypeResolver));
                 }
             }
         }
