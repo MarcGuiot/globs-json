@@ -18,12 +18,12 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
+class GlobTypeArrayGsonAdapter extends TypeAdapter<GlobType> {
     private final boolean forceSort;
     private GlobTypeResolver globTypeResolver;
     private GlobTypeGsonDeserializer globTypeGsonDeserializer;
 
-    public GlobTypeGsonAdapter(boolean forceSort, GlobTypeResolver globTypeResolver) {
+    public GlobTypeArrayGsonAdapter(boolean forceSort, GlobTypeResolver globTypeResolver) {
         this.forceSort = forceSort;
         this.globTypeResolver = globTypeResolver;
         globTypeGsonDeserializer = new GlobTypeGsonDeserializer(new GlobGSonDeserializer(), globTypeResolver);
@@ -39,7 +39,7 @@ class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
         if (type.getFieldCount() > 0) {
 
             out.name(GlobsGson.FIELDS)
-                    .beginObject();
+                    .beginArray();
             for (Field field : type.getFields()) {
                 field.safeVisit(new FieldVisitor() {
 
@@ -146,7 +146,7 @@ class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
                     }
                 });
             }
-            out.endObject();
+            out.endArray();
         }
         writeAnnotations(out, type.streamAnnotations());
         out.endObject();
@@ -158,9 +158,9 @@ class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
     }
 
     private JsonWriter writeField(Field field, String type, JsonWriter out, Consumer<JsonWriter> append) throws IOException {
-        out
-                .name(field.getName())
-                .beginObject()
+        out.beginObject()
+                .name(GlobsGson.FIELD_NAME)
+                .value(field.getName())
                 .name(GlobsGson.FIELD_TYPE)
                 .value(type);
         append.accept(out);
@@ -169,8 +169,7 @@ class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
                 field.streamAnnotations()
                         .filter(glob -> glob.getType() != FieldNameAnnotationType.TYPE ||
                                 !glob.get(FieldNameAnnotationType.NAME).equals(field.getName())));
-        out
-                .endObject();
+        out.endObject();
         return out;
     }
 

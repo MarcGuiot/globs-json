@@ -50,7 +50,13 @@ class GlobTypeGsonDeserializer {
             if (fields != null) {
                 if (fields instanceof JsonObject) {
                     for (Map.Entry<String, JsonElement> entry : ((JsonObject) fields).entrySet()) {
-                        readField(globTypeBuilder, entry);
+                        readField(globTypeBuilder, entry.getKey(), (JsonObject) entry.getValue());
+                    }
+                } else if (fields instanceof JsonArray) {
+                    for (JsonElement jsonElement : ((JsonArray) fields)) {
+                        if (jsonElement instanceof JsonObject) {
+                            readField(globTypeBuilder, ((JsonObject) jsonElement).get(GlobsGson.FIELD_NAME).getAsString(), ((JsonObject) jsonElement));
+                        }
                     }
                 }
             }
@@ -68,9 +74,8 @@ class GlobTypeGsonDeserializer {
         }
     }
 
-    private void readField(GlobTypeBuilder globTypeBuilder, Map.Entry<String, JsonElement> entry) {
-        String attrName = entry.getKey();
-        JsonObject fieldContent = (JsonObject) entry.getValue();
+    private void readField(GlobTypeBuilder globTypeBuilder, String attrName, JsonObject value) {
+        JsonObject fieldContent = value;
         String type = fieldContent.get(GlobsGson.FIELD_TYPE).getAsString();
         List<Glob> globList = readAnnotations(fieldContent);
         switch (type) {

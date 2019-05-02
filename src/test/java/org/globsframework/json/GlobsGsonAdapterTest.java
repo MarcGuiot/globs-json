@@ -64,8 +64,9 @@ public class GlobsGsonAdapterTest {
 
         assertEquivalent("{\n" +
                 "  \"kind\": \"test local type\",\n" +
-                "  \"fields\": {\n" +
-                "    \"id\": {\n" +
+                "  \"fields\": [\n" +
+                "    {\n" +
+                "      \"name\": \"id\",\n" +
                 "      \"type\": \"int\",\n" +
                 "      \"annotations\": [\n" +
                 "        {\n" +
@@ -74,7 +75,8 @@ public class GlobsGsonAdapterTest {
                 "        }\n" +
                 "      ]\n" +
                 "    },\n" +
-                "    \"a different name\": {\n" +
+                "    {\n" +
+                "      \"name\": \"a different name\",\n" +
                 "      \"type\": \"string\",\n" +
                 "      \"annotations\": [\n" +
                 "        {\n" +
@@ -83,7 +85,8 @@ public class GlobsGsonAdapterTest {
                 "        }\n" +
                 "      ]\n" +
                 "    },\n" +
-                "    \"data\": {\n" +
+                "    {\n" +
+                "      \"name\": \"data\",\n" +
                 "      \"type\": \"string\",\n" +
                 "      \"annotations\": [\n" +
                 "        {\n" +
@@ -91,15 +94,17 @@ public class GlobsGsonAdapterTest {
                 "        }\n" +
                 "      ]\n" +
                 "    },\n" +
-                "    \"value\": {\n" +
+                "    {\n" +
+                "      \"name\": \"value\",\n" +
                 "      \"type\": \"double\"\n" +
                 "    }\n" +
-                "  },\n" +
-                "  \"annotations\":[" +
-                "     {\"_kind\":\"requiredAnnotationType\"}" +
-                "  ]" +
-                "}" +
-                "\n", json);
+                "  ],\n" +
+                "  \"annotations\": [\n" +
+                "    {\n" +
+                "      \"_kind\": \"requiredAnnotationType\"\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}", json);
     }
 
     private Gson init(GlobType... types) {
@@ -473,7 +478,7 @@ public class GlobsGsonAdapterTest {
     public void withCharacterToEscape() {
         Gson gson = GlobsGson.create(name -> null);
         String jsonType = gson.toJson(ComplexClassName.TYPE);
-        Assert.assertEquals(jsonType, "{\"kind\":\"#$\\\"\\\\é\\u0026à@\",\"fields\":{\"data\":{\"type\":\"string\"}}}");
+        Assert.assertEquals("{\"kind\":\"#$\\\"\\\\é\\u0026à@\",\"fields\":[{\"name\":\"data\",\"type\":\"string\"}]}", jsonType);
 
         GlobType globType = gson.fromJson(jsonType, GlobType.class);
         Assert.assertEquals(ComplexClassName.TYPE.getName(),globType.getName());

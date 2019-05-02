@@ -11,6 +11,7 @@ public class GlobsGson {
     public static final String TYPE_NAME = "kind";
     public static final String FIELDS = "fields";
     public static final String FIELD_TYPE = "type";
+    public static final String FIELD_NAME = "name";
     public static final String ANNOTATIONS = "annotations";
     public static final String INT_TYPE = "int";
     public static final String INT_ARRAY_TYPE = "intArray";
@@ -40,7 +41,8 @@ public class GlobsGson {
     // WARN : GlobTypeGsonAdapter is state full : it keep the
     static public GsonBuilder createBuilder(GlobTypeResolver globTypeResolver) {
         return new GsonBuilder()
-              .registerTypeHierarchyAdapter(GlobType.class, new GlobTypeGsonAdapter(false, globTypeResolver))
+//              .registerTypeHierarchyAdapter(GlobType.class, new GlobTypeGsonAdapter(false, globTypeResolver))
+              .registerTypeHierarchyAdapter(GlobType.class, new GlobTypeArrayGsonAdapter(false, globTypeResolver))
               .registerTypeHierarchyAdapter(Glob.class, new GlobGsonAdapter(globTypeResolver))
                 ;
     }
