@@ -89,8 +89,7 @@ class JsonFieldValueVisitor implements FieldValueVisitor {
             for (String v : value) {
                 if (field.hasAnnotation(IsJsonContentType.UNIQUE_KEY)) {
                     jsonWriter.jsonValue(v);
-                }
-                else {
+                } else {
                     jsonWriter.value(v);
                 }
             }
@@ -159,7 +158,7 @@ class JsonFieldValueVisitor implements FieldValueVisitor {
         if (value != null) {
             jsonWriter.name(field.getName());
             jsonWriter.beginObject();
-            value.safeAccept(new JsonFieldValueVisitor(jsonWriter));
+            addGlobAttributes(value);
             jsonWriter.endObject();
         }
     }
@@ -168,14 +167,17 @@ class JsonFieldValueVisitor implements FieldValueVisitor {
         if (value != null) {
             jsonWriter.name(field.getName());
             jsonWriter.beginArray();
-            JsonFieldValueVisitor functor = new JsonFieldValueVisitor(jsonWriter);
             for (Glob v : value) {
                 jsonWriter.beginObject();
-                v.safeAccept(functor);
+                addGlobAttributes(v);
                 jsonWriter.endObject();
             }
             jsonWriter.endArray();
         }
+    }
+
+    public void addGlobAttributes(Glob v) {
+        v.safeAccept(this);
     }
 
     public void visitUnionGlob(GlobUnionField field, Glob value) throws Exception {
@@ -184,7 +186,7 @@ class JsonFieldValueVisitor implements FieldValueVisitor {
             jsonWriter.beginObject();
             jsonWriter.name(value.getType().getName());
             jsonWriter.beginObject();
-            value.safeAccept(new JsonFieldValueVisitor(jsonWriter));
+            addGlobAttributes(value);
             jsonWriter.endObject();
             jsonWriter.endObject();
         }
@@ -194,12 +196,11 @@ class JsonFieldValueVisitor implements FieldValueVisitor {
         if (value != null) {
             jsonWriter.name(field.getName());
             jsonWriter.beginArray();
-            JsonFieldValueVisitor functor = new JsonFieldValueVisitor(jsonWriter);
             for (Glob v : value) {
                 jsonWriter.beginObject();
                 jsonWriter.name(v.getType().getName());
                 jsonWriter.beginObject();
-                v.safeAccept(functor);
+                addGlobAttributes(v);
                 jsonWriter.endObject();
                 jsonWriter.endObject();
             }

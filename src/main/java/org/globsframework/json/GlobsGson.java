@@ -3,6 +3,7 @@ package org.globsframework.json;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.globsframework.metamodel.GlobType;
+import org.globsframework.model.ChangeSet;
 import org.globsframework.model.Glob;
 
 public class GlobsGson {
@@ -42,10 +43,13 @@ public class GlobsGson {
     static public GsonBuilder createBuilder(GlobTypeResolver globTypeResolver) {
         return new GsonBuilder()
 //              .registerTypeHierarchyAdapter(GlobType.class, new GlobTypeGsonAdapter(false, globTypeResolver))
-              .registerTypeHierarchyAdapter(GlobType.class, new GlobTypeArrayGsonAdapter(false, globTypeResolver))
-              .registerTypeHierarchyAdapter(Glob.class, new GlobGsonAdapter(globTypeResolver))
+                .registerTypeHierarchyAdapter(ChangeSet.class, new ChangeSetGsonAdapter())
+                .registerTypeHierarchyAdapter(GlobType.class, new GlobTypeArrayGsonAdapter(false, globTypeResolver))
+                .registerTypeHierarchyAdapter(Glob.class, new GlobGsonAdapter(globTypeResolver))
+                .registerTypeHierarchyAdapter(PreChangeSet.class, new PreChangeSetGsonAdapter(globTypeResolver))
                 ;
     }
+
 
     public static Gson create(GlobTypeResolver globTypeResolver) {
         return createBuilder(globTypeResolver).create();
