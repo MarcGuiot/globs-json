@@ -4,6 +4,7 @@ import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import org.globsframework.metamodel.Field;
+import org.globsframework.metamodel.fields.impl.FieldValueVisitorButKey;
 import org.globsframework.model.*;
 
 import java.io.IOException;
@@ -33,7 +34,7 @@ public class ChangeSetGsonAdapter extends TypeAdapter<ChangeSet> {
 
                 out.name("newValue");
                 out.beginObject();
-                values.safeAccept(functor);
+                values.safeAccept(functor.withoutKey());
                 out.endObject();
 
                 out.endObject();
@@ -56,12 +57,12 @@ public class ChangeSetGsonAdapter extends TypeAdapter<ChangeSet> {
 
                 out.name("newValue");
                 out.beginObject();
-                values.safeAccept(functor);
+                values.safeAccept(functor.withoutKey());
                 out.endObject();
 
                 out.name("oldValue");
                 out.beginObject();
-                values.safeAcceptOnPrevious(functor);
+                values.safeAcceptOnPreviousButKey(functor.withoutKey());
 
                 out.endObject();
 
@@ -86,7 +87,7 @@ public class ChangeSetGsonAdapter extends TypeAdapter<ChangeSet> {
 
                 out.name("oldValue");
                 out.beginObject();
-                previousValues.safeAccept(functor);
+                previousValues.safeAccept(functor.withoutKey());
                 out.endObject();
 
                 out.endObject();

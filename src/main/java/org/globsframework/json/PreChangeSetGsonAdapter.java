@@ -14,10 +14,10 @@ import org.globsframework.metamodel.fields.GlobArrayUnionField;
 import org.globsframework.metamodel.fields.GlobField;
 import org.globsframework.metamodel.fields.GlobUnionField;
 import org.globsframework.model.*;
-import org.globsframework.model.delta.DefaultChangeSet;
-import org.globsframework.model.delta.MutableChangeSet;
+import org.globsframework.model.delta.*;
 import org.globsframework.model.utils.DefaultFieldValues;
 import org.globsframework.model.utils.DefaultFieldValuesWithPrevious;
+import org.globsframework.utils.exceptions.ItemNotFound;
 
 import java.io.IOException;
 import java.util.*;
@@ -35,7 +35,7 @@ public class PreChangeSetGsonAdapter extends TypeAdapter<PreChangeSet> {
     }
 
     public PreChangeSet read(JsonReader in) throws IOException {
-        MutableChangeSet changeSet = new DefaultChangeSet();
+        FixStateChangeSet changeSet = new DefaultFixStateChangeSet();
         JsonParser jsonParser = new JsonParser();
         Jsonreader jsonreader = new Jsonreader();
         in.beginArray();
@@ -48,31 +48,37 @@ public class PreChangeSetGsonAdapter extends TypeAdapter<PreChangeSet> {
             GlobType globType = resolver.get(kind);
             JsonObject key = jsonObject.get("key").getAsJsonObject();
             Key readKey = readKey(key, globType, globType.getKeyFields(), jsonreader);
-            if (state.equals("create")) {
-                DefaultFieldValues newValues = new DefaultFieldValues();
-                newValues(jsonObject.getAsJsonObject("newValue"), globType, newValues, jsonreader);
-                changeSet.processCreation(readKey, newValues);
-            } else if (state.equals("update")) {
-                DefaultFieldValuesWithPrevious values = new DefaultFieldValuesWithPrevious(globType);
-                newValues(jsonObject.getAsJsonObject("newValue"), globType, values.getNewValues(), jsonreader);
-                newValues(jsonObject.getAsJsonObject("oldValue"), globType, values.getPreviousValues(), jsonreader);
-                changeSet.processUpdate(readKey, values);
-            } else if (state.equals("delete")) {
-                DefaultFieldValues newValues = new DefaultFieldValues();
-                newValues(jsonObject.getAsJsonObject("oldValue"), globType, newValues, jsonreader);
-                changeSet.processDeletion(readKey, newValues);
-            } else {
-                throw new RuntimeException("'" + state + "' not expected (create/delete/update)");
+            switch (state) {
+                case "create":
+                    DeltaGlob valuesForCreate = changeSet.getForCreate(readKey);
+                    newValues(jsonObject.getAsJsonObject("newValue"), globType, valuesForCreate::setValue, jsonreader);
+                    break;
+                case "update":
+                    DeltaGlob values = changeSet.getForUpdate(readKey);
+                    newValues(jsonObject.getAsJsonObject("newValue"), globType, values::setValue, jsonreader);
+                    newValues(jsonObject.getAsJsonObject("oldValue"), globType, values::setPreviousValue, jsonreader);
+                    break;
+                case "delete":
+                    DeltaGlob newValues = changeSet.getForDelete(readKey);
+                    newValues(jsonObject.getAsJsonObject("oldValue"), globType, newValues::setValue, jsonreader);
+                    break;
+                default:
+                    throw new RuntimeException("'" + state + "' not expected (create/delete/update)");
             }
         }
         in.endArray();
         return new PreChangeSet() {
-            @Override
+            Map<Key, Glob> local = new HashMap<>();
             public ChangeSet resolve(GlobAccessor globAccessor) {
                 jsonreader.functions.forEach(g -> g.apply(key -> {
+                    Glob glob = local.get(key);
+                    if (glob != null) {
+                        return glob;
+                    }
                     if (changeSet.isCreated(key)) {
                         MutableGlob instantiate = key.getGlobType().instantiate();
                         changeSet.getNewValues(key).safeApply(instantiate::setValue);
+                        local.put(key, instantiate);
                         return instantiate;
                     }
                     else {
@@ -96,7 +102,11 @@ public class PreChangeSetGsonAdapter extends TypeAdapter<PreChangeSet> {
         return keyBuilder.get();
     }
 
-    void newValues(JsonObject jsonObject, GlobType globType, FieldSetter values, Jsonreader jsonreader) {
+    interface FieldValueSetter {
+        void setValue(Field field, Object value);
+    }
+
+    void newValues(JsonObject jsonObject, GlobType globType, FieldValueSetter values, Jsonreader jsonreader) {
         Set<Map.Entry<String, JsonElement>> entries = jsonObject.entrySet();
         for (Map.Entry<String, JsonElement> entry : entries) {
             Field field = globType.findField(entry.getKey());
@@ -105,7 +115,12 @@ public class PreChangeSetGsonAdapter extends TypeAdapter<PreChangeSet> {
                 message += " from " + jsonObject;
                 throw new RuntimeException(message);
             }
-            field.safeVisit(jsonreader, entry.getValue(), values);
+            field.safeVisit(jsonreader, entry.getValue(), new AbstractFieldSetter() {
+                public FieldSetter setValue(Field field1, Object value) throws ItemNotFound {
+                    values.setValue(field1, value);
+                    return this;
+                }
+            });
         }
     }
 

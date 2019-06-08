@@ -2,6 +2,6 @@ package org.globsframework.json;
 
 import org.globsframework.model.ChangeSet;
 
-interface PreChangeSet {
+public interface PreChangeSet {
     ChangeSet resolve(GlobAccessor globAccessor);
 }

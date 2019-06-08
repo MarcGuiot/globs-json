@@ -153,12 +153,15 @@ public class GlobsGsonAdapterTest {
     public void writeDoubleWithoutDecimalGlob() throws Exception {
         MutableGlob instantiate = LocalType.TYPE.instantiate();
         MutableGlob glob = instantiate.set(LocalType.ID, 1)
-                .set(LocalType.NAME, "name 1")
+                .set(LocalType.NAME, "name \" \n 1")
                 .set(LocalType.VALUE, 2);
         Gson gson = init();
 
         String toJson = gson.toJson(glob);
-        Assert.assertEquals("{\"_kind\":\"test local type\",\"id\":1,\"a different name\":\"name 1\",\"value\":2.0}", toJson);
+        Assert.assertEquals("{\"_kind\":\"test local type\",\"id\":1,\"a different name\":\"name \\\" \\n 1\",\"value\":2.0}", toJson);
+        Glob decoded = gson.fromJson(toJson, Glob.class);
+        Assert.assertEquals("name \" \n 1", decoded.get(LocalType.NAME));
+        Assert.assertEquals(2., decoded.get(LocalType.VALUE), 00001);
     }
 
 

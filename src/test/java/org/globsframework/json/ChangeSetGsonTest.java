@@ -11,9 +11,7 @@ import org.globsframework.metamodel.fields.GlobField;
 import org.globsframework.metamodel.fields.IntegerField;
 import org.globsframework.metamodel.fields.StringField;
 import org.globsframework.metamodel.impl.DefaultGlobModel;
-import org.globsframework.model.ChangeSet;
-import org.globsframework.model.Glob;
-import org.globsframework.model.Key;
+import org.globsframework.model.*;
 import org.globsframework.model.delta.DefaultChangeSet;
 import org.globsframework.model.delta.MutableChangeSet;
 import org.globsframework.model.format.GlobPrinter;
@@ -149,6 +147,125 @@ public class ChangeSetGsonTest {
         }
     }
 
+    @Test
+    public void createAndCreateSub() {
+        MutableChangeSet changeSet = DefaultChangeSet.createOrdered();
+        Glob sub1 = SubType.TYPE.instantiate().set(SubType.SUB_NAME, "nSub1").set(SubType.UUID, "AAAA");
+        changeSet.processCreation(sub1.getKey(), sub1);
+
+        Glob master = DummyType.TYPE.instantiate().set(DummyType.UUID, "UUID_1").set(DummyType.SUB_ELEMENT, sub1);
+        changeSet.processCreation(master.getKey(), master);
+        GlobModel globModel = new DefaultGlobModel(DummyType.TYPE, SubType.TYPE, SubTypeWWithoutKey.TYPE);
+
+        Gson gson = GlobsGson.create(globModel::getType);
+        String jsonChangeSet = gson.toJson(changeSet);
+        GlobsGsonAdapterTest.assertEquivalent("[\n" +
+                "  {\n" +
+                "    \"state\": \"create\",\n" +
+                "    \"_kind\": \"subType\",\n" +
+                "    \"key\": {\n" +
+                "      \"uuid\": \"AAAA\"\n" +
+                "    },\n" +
+                "    \"newValue\": {\n" +
+                "      \"subName\": \"nSub1\"\n" +
+                "    }\n" +
+                "  },\n" +
+                "  {\n" +
+                "    \"state\": \"create\",\n" +
+                "    \"_kind\": \"dummyType\",\n" +
+                "    \"key\": {\n" +
+                "      \"uuid\": \"UUID_1\"\n" +
+                "    },\n" +
+                "    \"newValue\": {\n" +
+                "      \"subElement\": {\n" +
+                "        \"uuid\": \"AAAA\"\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "]", jsonChangeSet);
+
+        PreChangeSet preChangeSet = gson.fromJson(jsonChangeSet, PreChangeSet.class);
+
+        ChangeSet actualChangeSet = preChangeSet.resolve(key -> {
+            throw new RuntimeException("Unexpected key " + GlobPrinter.toString(key.asFieldValues()));
+        });
+
+        {
+            Set<Key> created = actualChangeSet.getCreated(DummyType.TYPE);
+            Assert.assertEquals(created.size(), 1);
+            Assert.assertTrue(created.contains(master.getKey()));
+            FieldValues newValues = actualChangeSet.getNewValues(created.iterator().next());
+            Glob glob = newValues.get(DummyType.SUB_ELEMENT);
+            Assert.assertNotNull(glob);
+            Assert.assertEquals("AAAA", glob.get(SubType.UUID));
+            Assert.assertEquals("nSub1", glob.get(SubType.SUB_NAME));
+        }
+        {
+            Set<Key> created = actualChangeSet.getCreated(SubType.TYPE);
+            Assert.assertEquals(created.size(), 1);
+            Assert.assertTrue(created.contains(sub1.getKey()));
+        }
+    }
+
+    @Test
+    public void createAndUpdate() {
+        MutableChangeSet changeSet = DefaultChangeSet.createOrdered();
+        Glob sub1 = SubType.TYPE.instantiate().set(SubType.SUB_NAME, "nSub1").set(SubType.UUID, "AAAA");
+        changeSet.processCreation(sub1.getKey(), sub1);
+
+        Glob master = DummyType.TYPE.instantiate().set(DummyType.UUID, "UUID_1");
+        changeSet.processUpdate(master.getKey(), DummyType.SUB_ELEMENT, sub1, null);
+
+        GlobModel globModel = new DefaultGlobModel(DummyType.TYPE, SubType.TYPE, SubTypeWWithoutKey.TYPE);
+
+        Gson gson = GlobsGson.create(globModel::getType);
+        String jsonChangeSet = gson.toJson(changeSet);
+        GlobsGsonAdapterTest.assertEquivalent("[\n" +
+                "  {\n" +
+                "    \"state\": \"update\",\n" +
+                "    \"_kind\": \"dummyType\",\n" +
+                "    \"key\": {\n" +
+                "      \"uuid\": \"UUID_1\"\n" +
+                "    },\n" +
+                "    \"newValue\": {\n" +
+                "      \"subElement\": {\n" +
+                "        \"uuid\": \"AAAA\"\n" +
+                "      }\n" +
+                "    },\n" +
+                "    \"oldValue\": {}\n" +
+                "  },\n" +
+                "  {\n" +
+                "    \"state\": \"create\",\n" +
+                "    \"_kind\": \"subType\",\n" +
+                "    \"key\": {\n" +
+                "      \"uuid\": \"AAAA\"\n" +
+                "    },\n" +
+                "    \"newValue\": {\n" +
+                "      \"subName\": \"nSub1\"\n" +
+                "    }\n" +
+                "  }\n" +
+                "]", jsonChangeSet);
+
+        PreChangeSet preChangeSet = gson.fromJson(jsonChangeSet, PreChangeSet.class);
+        ((MutableGlob) master).set(DummyType.SUB_ELEMENT, null);
+        ChangeSet actualChangeSet = preChangeSet.resolve(key -> {
+            if (key.equals(master.getKey())) {
+                return master;
+            }
+            throw new RuntimeException("Unexpected key " + GlobPrinter.toString(key.asFieldValues()));
+        });
+
+        {
+            Set<Key> updated = actualChangeSet.getUpdated(DummyType.TYPE);
+            Assert.assertEquals(updated.size(), 1);
+            Assert.assertTrue(updated.contains(master.getKey()));
+        }
+        {
+            Set<Key> created = actualChangeSet.getCreated(SubType.TYPE);
+            Assert.assertEquals(created.size(), 1);
+            Assert.assertTrue(created.contains(sub1.getKey()));
+        }
+    }
 
     public static class DummyType {
         public static GlobType TYPE;
