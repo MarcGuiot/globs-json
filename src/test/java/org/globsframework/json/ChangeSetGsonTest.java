@@ -40,6 +40,9 @@ public class ChangeSetGsonTest {
         Glob d2 = DummyType.TYPE.instantiate().set(DummyType.NAME, "d1").set(DummyType.UUID, "YYYYY");
         changeSet.processUpdate(d2.getKey(), DummyType.NAME, "d1", "d2");
 
+        Glob d3_1 = DummyType.TYPE.instantiate().set(DummyType.UUID, "EERS");
+        changeSet.processUpdate(d3_1.getKey(), DummyType.NAME, null, "a bad name");
+
         Glob d3 = DummyType.TYPE.instantiate().set(DummyType.UUID, "ZZZZ").set(DummyType.NAME, "d3");
         changeSet.processDeletion(d3.getKey(), d3);
 
@@ -69,6 +72,19 @@ public class ChangeSetGsonTest {
                 "    },\n" +
                 "    \"oldValue\": {\n" +
                 "      \"name\": \"d2\"\n" +
+                "    }\n" +
+                "  },\n" +
+                "  {\n" +
+                "    \"state\": \"update\",\n" +
+                "    \"_kind\": \"dummyType\",\n" +
+                "    \"key\": {\n" +
+                "      \"uuid\": \"EERS\"\n" +
+                "    },\n" +
+                "    \"newValue\": {\n" +
+                "      \"name\": null\n" +
+                "    },\n" +
+                "    \"oldValue\": {\n" +
+                "      \"name\": \"a bad name\"\n" +
                 "    }\n" +
                 "  },\n" +
                 "  {\n" +
@@ -142,8 +158,9 @@ public class ChangeSetGsonTest {
         }
         {
             Set<Key> updated = actualChangeSet.getUpdated(DummyType.TYPE);
-            Assert.assertEquals(updated.size(), 1);
+            Assert.assertEquals(updated.size(), 2);
             Assert.assertTrue(updated.contains(d2.getKey()));
+            Assert.assertTrue(updated.contains(d3_1.getKey()));
         }
     }
 
@@ -265,6 +282,55 @@ public class ChangeSetGsonTest {
             Assert.assertEquals(created.size(), 1);
             Assert.assertTrue(created.contains(sub1.getKey()));
         }
+    }
+
+    @Test
+    public void testWithNull() {
+        //language=JSON
+        String json = "[\n" +
+                "  {\n" +
+                "    \"state\": \"update\",\n" +
+                "    \"_kind\": \"dummyType\",\n" +
+                "    \"key\": {\n" +
+                "      \"uuid\": \"UUID_1\"\n" +
+                "    },\n" +
+                "    \"newValue\": {\n" +
+                "      \"name\": \"AAAA\"\n" +
+                "    },\n" +
+                "    \"oldValue\": {\n" +
+                "      \"name\": null\n" +
+                "    }\n" +
+                "  },\n" +
+                "  {\n" +
+                "    \"state\": \"update\",\n" +
+                "    \"_kind\": \"dummyType\",\n" +
+                "    \"key\": {\n" +
+                "      \"uuid\": \"UUID_2\"\n" +
+                "    },\n" +
+                "    \"newValue\": {\n" +
+                "      \"name\": null\n" +
+                "    },\n" +
+                "    \"oldValue\": {\n" +
+                "      \"name\": \"AAAA\"\n" +
+                "    }\n" +
+                "  }\n" +
+                "]";
+
+        Glob uuid1 = DummyType.TYPE.instantiate().set(DummyType.UUID, "UUID_1");
+        Glob uuid2 = DummyType.TYPE.instantiate().set(DummyType.UUID, "UUID_2");
+        GlobModel globModel = new DefaultGlobModel(DummyType.TYPE);
+        Gson gson = GlobsGson.create(globModel::getType);
+        PreChangeSet preChangeSet = gson.fromJson(json, PreChangeSet.class);
+        preChangeSet.resolve(key -> {
+            switch (key.get(DummyType.UUID)) {
+                case "UUID_1":
+                    return uuid1;
+                case "UUID_2":
+                    return uuid2;
+                default:
+                    return null;
+            }
+        });
     }
 
     public static class DummyType {

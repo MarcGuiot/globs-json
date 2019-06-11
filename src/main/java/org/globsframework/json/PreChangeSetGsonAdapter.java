@@ -14,9 +14,9 @@ import org.globsframework.metamodel.fields.GlobArrayUnionField;
 import org.globsframework.metamodel.fields.GlobField;
 import org.globsframework.metamodel.fields.GlobUnionField;
 import org.globsframework.model.*;
-import org.globsframework.model.delta.*;
-import org.globsframework.model.utils.DefaultFieldValues;
-import org.globsframework.model.utils.DefaultFieldValuesWithPrevious;
+import org.globsframework.model.delta.DefaultFixStateChangeSet;
+import org.globsframework.model.delta.DeltaGlob;
+import org.globsframework.model.delta.FixStateChangeSet;
 import org.globsframework.utils.exceptions.ItemNotFound;
 
 import java.io.IOException;
@@ -51,16 +51,16 @@ public class PreChangeSetGsonAdapter extends TypeAdapter<PreChangeSet> {
             switch (state) {
                 case "create":
                     DeltaGlob valuesForCreate = changeSet.getForCreate(readKey);
-                    newValues(jsonObject.getAsJsonObject("newValue"), globType, valuesForCreate::setValue, jsonreader);
+                    readValues(jsonObject.getAsJsonObject("newValue"), globType, valuesForCreate::setValue, jsonreader);
                     break;
                 case "update":
                     DeltaGlob values = changeSet.getForUpdate(readKey);
-                    newValues(jsonObject.getAsJsonObject("newValue"), globType, values::setValue, jsonreader);
-                    newValues(jsonObject.getAsJsonObject("oldValue"), globType, values::setPreviousValue, jsonreader);
+                    readValues(jsonObject.getAsJsonObject("newValue"), globType, values::setValue, jsonreader);
+                    readValues(jsonObject.getAsJsonObject("oldValue"), globType, values::setPreviousValue, jsonreader);
                     break;
                 case "delete":
                     DeltaGlob newValues = changeSet.getForDelete(readKey);
-                    newValues(jsonObject.getAsJsonObject("oldValue"), globType, newValues::setValue, jsonreader);
+                    readValues(jsonObject.getAsJsonObject("oldValue"), globType, newValues::setValue, jsonreader);
                     break;
                 default:
                     throw new RuntimeException("'" + state + "' not expected (create/delete/update)");
@@ -69,6 +69,7 @@ public class PreChangeSetGsonAdapter extends TypeAdapter<PreChangeSet> {
         in.endArray();
         return new PreChangeSet() {
             Map<Key, Glob> local = new HashMap<>();
+
             public ChangeSet resolve(GlobAccessor globAccessor) {
                 jsonreader.functions.forEach(g -> g.apply(key -> {
                     Glob glob = local.get(key);
@@ -80,8 +81,7 @@ public class PreChangeSetGsonAdapter extends TypeAdapter<PreChangeSet> {
                         changeSet.getNewValues(key).safeApply(instantiate::setValue);
                         local.put(key, instantiate);
                         return instantiate;
-                    }
-                    else {
+                    } else {
                         return globAccessor.get(key);
                     }
                 }));
@@ -95,18 +95,14 @@ public class PreChangeSetGsonAdapter extends TypeAdapter<PreChangeSet> {
         KeyBuilder keyBuilder = KeyBuilder.create(globType);
         for (Field field : fields) {
             JsonElement jsonElement = jsonObject.get(field.getName());
-            if (jsonElement != null) {
+            if (jsonElement != null && !jsonElement.isJsonNull()) {
                 field.safeVisit(jsonreader, jsonElement, keyBuilder);
             }
         }
         return keyBuilder.get();
     }
 
-    interface FieldValueSetter {
-        void setValue(Field field, Object value);
-    }
-
-    void newValues(JsonObject jsonObject, GlobType globType, FieldValueSetter values, Jsonreader jsonreader) {
+    void readValues(JsonObject jsonObject, GlobType globType, FieldValueSetter values, Jsonreader jsonreader) {
         Set<Map.Entry<String, JsonElement>> entries = jsonObject.entrySet();
         for (Map.Entry<String, JsonElement> entry : entries) {
             Field field = globType.findField(entry.getKey());
@@ -115,15 +111,23 @@ public class PreChangeSetGsonAdapter extends TypeAdapter<PreChangeSet> {
                 message += " from " + jsonObject;
                 throw new RuntimeException(message);
             }
-            field.safeVisit(jsonreader, entry.getValue(), new AbstractFieldSetter() {
-                public FieldSetter setValue(Field field1, Object value) throws ItemNotFound {
-                    values.setValue(field1, value);
-                    return this;
-                }
-            });
+            JsonElement value = entry.getValue();
+            if (value == null || value.isJsonNull()) {
+                values.setValue(field, null);
+            } else {
+                field.safeVisit(jsonreader, value, new AbstractFieldSetter() {
+                    public FieldSetter setValue(Field field1, Object value) throws ItemNotFound {
+                        values.setValue(field1, value);
+                        return this;
+                    }
+                });
+            }
         }
     }
 
+    interface FieldValueSetter {
+        void setValue(Field field, Object value);
+    }
 
     static class Jsonreader extends GSonVisitor {
 
