@@ -15,12 +15,16 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 public class GlobGSonDeserializer {
-    private static Logger LOGGER = LoggerFactory.getLogger(GlobGSonDeserializer.class);
     public static final Gson GSON = new Gson();
     public static final GSonVisitor G_SON_VISITOR = new GSonVisitor() {
         Glob readGlob(JsonObject jsonObject, GlobType globType) {
@@ -28,6 +32,7 @@ public class GlobGSonDeserializer {
         }
     };
     private static final ReadJsonWithReaderFieldVisitor fieldVisitor = new ReadJsonWithReaderFieldVisitor();
+    private static Logger LOGGER = LoggerFactory.getLogger(GlobGSonDeserializer.class);
 
     public GlobGSonDeserializer() {
     }
@@ -68,10 +73,53 @@ public class GlobGSonDeserializer {
             String name = in.nextName();
             Field field = globType.findField(name);
             if (field != null) {
-                field.safeVisit(fieldVisitor, instantiate, in);
-            }
-            else {
+                if (in.peek() != JsonToken.NULL) {
+                    field.safeVisit(fieldVisitor, instantiate, in);
+                } else {
+                    in.skipValue();
+                    instantiate.setValue(field, null);
+                }
+            } else {
                 in.skipValue();
+            }
+        }
+        return instantiate;
+    }
+
+    public static Glob read(JsonReader in, GlobTypeResolver resolver) throws IOException {
+        in.beginObject();
+        if (in.hasNext() && in.peek() != JsonToken.END_OBJECT) {
+            String name = in.nextName();
+            if (name.equalsIgnoreCase(GlobsGson.KIND_NAME)) {
+                String kind = in.nextString();
+                Glob glob = readFields(in, resolver.get(kind));
+                in.endObject();
+                return glob;
+            } else {
+                return readFieldByField(in, name, resolver);
+            }
+        }
+        return null;
+    }
+
+    private static Glob readFieldByField(JsonReader in, String name, GlobTypeResolver resolver) throws IOException {
+        JsonParser jsonParser = new JsonParser();
+        Map<String, JsonElement> values = new HashMap<>();
+        values.put(name, jsonParser.parse(in));
+        while (in.peek() != JsonToken.END_OBJECT) {
+            values.put(in.nextName(), jsonParser.parse(in));
+        }
+        in.endObject();
+        JsonElement kindElement = values.get(GlobsGson.KIND_NAME);
+        if (kindElement == null) {
+            throw new RuntimeException("kind not found in " + values);
+        }
+        GlobType type = resolver.get(kindElement.getAsString());
+        MutableGlob instantiate = type.instantiate();
+        for (Map.Entry<String, JsonElement> stringJsonElementEntry : values.entrySet()) {
+            Field field = type.findField(stringJsonElementEntry.getKey());
+            if (field != null) {
+                field.safeVisit(G_SON_VISITOR, stringJsonElementEntry.getValue(), instantiate);
             }
         }
         return instantiate;
@@ -116,22 +164,30 @@ public class GlobGSonDeserializer {
         }
 
         public void visitString(StringField field, FieldSetter mutableGlob, JsonReader jsonReader) throws Exception {
-            JsonToken peek = jsonReader.peek();
-            if (peek != JsonToken.NULL) {
-                if (field.hasAnnotation(IsJsonContentType.UNIQUE_KEY)) {
-                    JsonParser jsonParser = new JsonParser();
-                    JsonElement parse = jsonParser.parse(jsonReader);
-                    if (parse.isJsonArray()) {
-                        mutableGlob.set(field, GSON.toJson(parse.getAsJsonArray()));
-                    } else if (parse.isJsonObject()) {
-                        mutableGlob.set(field, GSON.toJson(parse.getAsJsonObject()));
-                    } else if (parse.isJsonPrimitive()) {
-                        mutableGlob.set(field, GSON.toJson(parse.getAsJsonPrimitive()));
-                    } else {
-                        throw new RuntimeException(peek + " not managed in " + field.getFullName());
-                    }
+            if (field.hasAnnotation(IsJsonContentType.UNIQUE_KEY)) {
+                JsonParser jsonParser = new JsonParser();
+                JsonElement parse = jsonParser.parse(jsonReader);
+                if (parse.isJsonArray()) {
+                    mutableGlob.set(field, GSON.toJson(parse.getAsJsonArray()));
+                } else if (parse.isJsonObject()) {
+                    mutableGlob.set(field, GSON.toJson(parse.getAsJsonObject()));
+                } else if (parse.isJsonPrimitive()) {
+                    mutableGlob.set(field, GSON.toJson(parse.getAsJsonPrimitive()));
                 } else {
-                    mutableGlob.set(field, jsonReader.nextString());
+                    throw new RuntimeException(parse.toString() + " not managed in " + field.getFullName());
+                }
+            } else {
+                JsonToken peek = jsonReader.peek();
+                switch (peek) {
+                    case STRING:
+                        mutableGlob.set(field, jsonReader.nextString());
+                        break;
+                    case NUMBER:
+                        mutableGlob.set(field, Double.toString(jsonReader.nextDouble()));
+                        break;
+                    case BOOLEAN:
+                        mutableGlob.set(field, Boolean.toString(jsonReader.nextBoolean()));
+                        break;
                 }
             }
         }
@@ -218,12 +274,31 @@ public class GlobGSonDeserializer {
             mutableGlob.set(field, Arrays.copyOf(values, count));
         }
 
+
         public void visitDate(DateField field, FieldSetter mutableGlob, JsonReader jsonReader) throws Exception {
-            mutableGlob.set(field, LocalDate.from(DateTimeFormatter.ISO_DATE.parse(jsonReader.nextString())));
+            DateTimeFormatter dateConverter = GSonUtils.getCachedDateFormatter(field);
+            mutableGlob.set(field, LocalDate.from(dateConverter.parse(jsonReader.nextString())));
         }
 
+
+        // gestion a revoir
+
         public void visitDateTime(DateTimeField field, FieldSetter mutableGlob, JsonReader jsonReader) throws Exception {
-            mutableGlob.set(field, ZonedDateTime.from(DateTimeFormatter.ISO_DATE_TIME.parse(jsonReader.nextString())));
+            DateTimeFormatter dateConverter = GSonUtils.getCachedDateTimeFormatter(field);
+            String text = jsonReader.nextString();
+            if (field.hasAnnotation(JsonDateTimeFormatType.UNIQUE_KEY)) {
+                Glob annotation = field.getAnnotation(JsonDateTimeFormatType.UNIQUE_KEY);
+                String nullValue = annotation.get(JsonDateTimeFormatType.NULL_VALUE);
+                if (text.equals(nullValue) || "".equals(text)) {
+                    return;
+                }
+                Boolean aBoolean = annotation.get(JsonDateTimeFormatType.AS_LOCAL);
+                if (aBoolean) {
+                    mutableGlob.set(field, ZonedDateTime.of(LocalDateTime.from(dateConverter.parse(text)), ZoneId.systemDefault()));
+                    return;
+                }
+            }
+            mutableGlob.set(field, ZonedDateTime.from(dateConverter.parse(text)));
         }
 
         public void visitBlob(BlobField field, FieldSetter mutableGlob, JsonReader jsonReader) throws Exception {
@@ -280,45 +355,6 @@ public class GlobGSonDeserializer {
             jsonReader.endArray();
             mutableGlob.set(field, Arrays.copyOf(values, count));
         }
-    }
-
-    public static Glob read(JsonReader in, GlobTypeResolver resolver) throws IOException {
-        in.beginObject();
-        if (in.hasNext() && in.peek() != JsonToken.END_OBJECT) {
-            String name = in.nextName();
-            if (name.equalsIgnoreCase(GlobsGson.KIND_NAME)) {
-                String kind = in.nextString();
-                Glob glob = readFields(in, resolver.get(kind));
-                in.endObject();
-                return glob;
-            } else {
-                return readFieldByField(in, name, resolver);
-            }
-        }
-        return null;
-    }
-
-    private static Glob readFieldByField(JsonReader in, String name, GlobTypeResolver resolver) throws IOException {
-        JsonParser jsonParser = new JsonParser();
-        Map<String, JsonElement> values = new HashMap<>();
-        values.put(name, jsonParser.parse(in));
-        while (in.peek() != JsonToken.END_OBJECT) {
-            values.put(in.nextName(), jsonParser.parse(in));
-        }
-        in.endObject();
-        JsonElement kindElement = values.get(GlobsGson.KIND_NAME);
-        if (kindElement == null) {
-            throw new RuntimeException("kind not found in " + values);
-        }
-        GlobType type = resolver.get(kindElement.getAsString());
-        MutableGlob instantiate = type.instantiate();
-        for (Map.Entry<String, JsonElement> stringJsonElementEntry : values.entrySet()) {
-            Field field = type.findField(stringJsonElementEntry.getKey());
-            if (field != null) {
-                field.safeVisit(G_SON_VISITOR, stringJsonElementEntry.getValue(), instantiate);
-            }
-        }
-        return instantiate;
     }
 
 }

@@ -164,6 +164,22 @@ public class GlobsGsonAdapterTest {
         Assert.assertEquals(2., decoded.get(LocalType.VALUE), 00001);
     }
 
+    @Test
+    public void withNullValue() throws Exception {
+        Gson gson = init();
+
+        String toJson = "{\n" +
+                "  \"_kind\": \"test local type\",\n" +
+                "  \"id\": 1,\n" +
+                "  \"a different name\": null,\n" +
+                "  \"value\": null\n" +
+                "}";
+        Glob decoded = gson.fromJson(toJson, Glob.class);
+        Assert.assertNull( decoded.get(LocalType.NAME));
+        Assert.assertNull( decoded.get(LocalType.VALUE));
+    }
+
+
 
     static class Data {
         Glob glob;
@@ -497,4 +513,5 @@ public class GlobsGsonAdapterTest {
         GlobType globType = gson.fromJson(jsonType, GlobType.class);
         Assert.assertEquals("with &éè", globType.getName());
     }
+
 }

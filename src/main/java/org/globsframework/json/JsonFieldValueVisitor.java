@@ -135,15 +135,17 @@ class JsonFieldValueVisitor implements FieldValueVisitor {
 
     public void visitDate(DateField field, LocalDate value) throws Exception {
         if (value != null) {
+            DateTimeFormatter cachedDateTimeFormatter = GSonUtils.getCachedDateFormatter(field);
             jsonWriter.name(field.getName());
-            jsonWriter.value(DateTimeFormatter.ISO_DATE.format(value));
+            jsonWriter.value(cachedDateTimeFormatter.format(value));
         }
     }
 
     public void visitDateTime(DateTimeField field, ZonedDateTime value) throws Exception {
         if (value != null) {
+            DateTimeFormatter timeFormatter = GSonUtils.getCachedDateTimeFormatter(field);
             jsonWriter.name(field.getName());
-            jsonWriter.value(DateTimeFormatter.ISO_DATE_TIME.format(value));
+            jsonWriter.value(timeFormatter.format(value));
         }
     }
 

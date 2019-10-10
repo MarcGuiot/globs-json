@@ -5,23 +5,22 @@ import org.globsframework.metamodel.GlobTypeLoaderFactory;
 import org.globsframework.metamodel.annotations.GlobCreateFromAnnotation;
 import org.globsframework.metamodel.annotations.InitUniqueGlob;
 import org.globsframework.metamodel.annotations.InitUniqueKey;
+import org.globsframework.metamodel.fields.StringField;
 import org.globsframework.model.Glob;
 import org.globsframework.model.Key;
 
-public class IsJsonContentType {
+public class JsonDateFormatType {
     public static GlobType TYPE;
+
+    public static StringField FORMAT;
 
     @InitUniqueKey
     public static Key UNIQUE_KEY;
 
-    @InitUniqueGlob
-    public static Glob UNIQUE_GLOB;
-
     static {
-        GlobTypeLoaderFactory.create(IsJsonContentType.class, "isJsonContent")
-              .register(GlobCreateFromAnnotation.class, annotation -> UNIQUE_GLOB)
+        GlobTypeLoaderFactory.create(JsonDateFormatType.class, "jsonDateFormat")
+              .register(GlobCreateFromAnnotation.class, annotation -> TYPE.instantiate().set(FORMAT, ((JsonDateFormatAnnotation) annotation).value()))
               .load();
     }
-
 
 }
