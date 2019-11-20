@@ -157,7 +157,7 @@ public class PreChangeSetGsonAdapter extends TypeAdapter<PreChangeSet> {
                 }
                 return keyBuilder.get();
             } else {
-                throw new RuntimeException("Only key object with key are expected " + globType.getName());
+                throw new RuntimeException("Only object with key are expected " + globType.getName());
             }
         }
 

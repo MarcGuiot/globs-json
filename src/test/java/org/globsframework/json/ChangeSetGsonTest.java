@@ -130,9 +130,9 @@ public class ChangeSetGsonTest {
         PreChangeSet preChangeSet = gson.fromJson(jsonChangeSet, PreChangeSet.class);
 
         ChangeSet actualChangeSet = preChangeSet.resolve(key -> {
-            if (key.equals(d2.getKey())) {
-                return d2;
-            }
+//            if (key.equals(d2.getKey())) {
+//                return d2;
+//            }
             throw new RuntimeException("Unexpected key " + GlobPrinter.toString(key.asFieldValues()));
         });
 
@@ -266,9 +266,9 @@ public class ChangeSetGsonTest {
         PreChangeSet preChangeSet = gson.fromJson(jsonChangeSet, PreChangeSet.class);
         ((MutableGlob) master).set(DummyType.SUB_ELEMENT, null);
         ChangeSet actualChangeSet = preChangeSet.resolve(key -> {
-            if (key.equals(master.getKey())) {
-                return master;
-            }
+//            if (key.equals(master.getKey())) {
+//                return master;
+//            }
             throw new RuntimeException("Unexpected key " + GlobPrinter.toString(key.asFieldValues()));
         });
 
@@ -321,16 +321,27 @@ public class ChangeSetGsonTest {
         GlobModel globModel = new DefaultGlobModel(DummyType.TYPE);
         Gson gson = GlobsGson.create(globModel::getType);
         PreChangeSet preChangeSet = gson.fromJson(json, PreChangeSet.class);
-        preChangeSet.resolve(key -> {
-            switch (key.get(DummyType.UUID)) {
-                case "UUID_1":
-                    return uuid1;
-                case "UUID_2":
-                    return uuid2;
-                default:
-                    return null;
-            }
+        ChangeSet changeSet = preChangeSet.resolve(key -> {
+            Assert.fail();
+            return null;
+//            switch (key.get(DummyType.UUID)) {
+//                case "UUID_1":
+//                    return uuid1;
+//                case "UUID_2":
+//                    return uuid2;
+//                default:
+//                    return null;
+//            }
         });
+        Set<Key> updated = changeSet.getUpdated(DummyType.TYPE);
+        Assert.assertTrue(updated.contains(uuid1.getKey()));
+        Assert.assertTrue(updated.contains(uuid2.getKey()));
+    }
+
+
+    @Test
+    public void Update() {
+
     }
 
     public static class DummyType {
