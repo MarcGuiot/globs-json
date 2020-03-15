@@ -64,17 +64,21 @@ public class GSonUtils {
     }
 
     public static String encode(Glob glob, boolean withKind) {
+        StringWriter out = new StringWriter();
+         encode(out, glob, withKind);
+        return out.toString();
+    }
+
+    public static void encode(Writer out, Glob glob, boolean withKind) {
         try {
-            StringWriter out = new StringWriter();
             JsonWriter jsonWriter = new JsonWriter(out);
-            JsonFieldValueVisitor jsonFieldValueVisitor = new JsonFieldValueVisitor(jsonWriter);
             jsonWriter.beginObject();
             if (withKind) {
                 jsonWriter.name(GlobsGson.KIND_NAME).value(glob.getType().getName());
             }
+            JsonFieldValueVisitor jsonFieldValueVisitor = new JsonFieldValueVisitor(jsonWriter);
             glob.safeAccept(jsonFieldValueVisitor);
             jsonWriter.endObject();
-            return out.toString();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
