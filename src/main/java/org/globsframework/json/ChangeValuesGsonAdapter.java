@@ -1,21 +1,20 @@
 package org.globsframework.json;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import org.globsframework.metamodel.Field;
 import org.globsframework.model.*;
 
 import java.io.IOException;
 
-public class ChangeSetGsonAdapter extends TypeAdapter<ChangeSet> {
+public class ChangeValuesGsonAdapter {
 
-    public ChangeSetGsonAdapter() {
+    interface ChangeValues {
+        void safeVisit(ChangeSetVisitor visitor);
     }
 
-    public void write(JsonWriter out, ChangeSet changeSet) throws IOException {
+    public void write(JsonWriter out, ChangeValues changeValues) throws IOException {
         out.beginArray();
-        changeSet.safeVisit(new ChangeSetVisitor() {
+        changeValues.safeVisit(new ChangeSetVisitor() {
             @Override
             public void visitCreation(Key key, FieldsValueScanner values) throws Exception {
                 JsonFieldValueVisitor functor = new ChangeSetJsonFieldValueVisitor(out);
@@ -61,7 +60,7 @@ public class ChangeSetGsonAdapter extends TypeAdapter<ChangeSet> {
 
                 out.name("oldValue");
                 out.beginObject();
-                values.safeAcceptOnPrevious(functor.withoutKey());
+                values.safeAccept(functor.withoutKey());
 
                 out.endObject();
 
@@ -94,11 +93,6 @@ public class ChangeSetGsonAdapter extends TypeAdapter<ChangeSet> {
         });
         out.endArray();
     }
-
-    public ChangeSet read(JsonReader in) throws IOException {
-        throw new RuntimeException("A changet is not readable, use PreChangeSet.");
-    }
-
 
     static class ChangeSetJsonFieldValueVisitor extends JsonFieldValueVisitor {
 
