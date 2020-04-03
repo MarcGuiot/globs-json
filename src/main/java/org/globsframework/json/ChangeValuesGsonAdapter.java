@@ -8,16 +8,16 @@ import java.io.IOException;
 
 public class ChangeValuesGsonAdapter {
 
-    interface ChangeValues {
+    public interface ChangeValues {
         void safeVisit(ChangeSetVisitor visitor);
     }
 
-    public void write(JsonWriter out, ChangeValues changeValues) throws IOException {
+    public static void write(JsonWriter out, ChangeValues changeValues) throws IOException {
+        JsonFieldValueVisitor functor = new ChangeSetJsonFieldValueVisitor(out);
         out.beginArray();
         changeValues.safeVisit(new ChangeSetVisitor() {
             @Override
             public void visitCreation(Key key, FieldsValueScanner values) throws Exception {
-                JsonFieldValueVisitor functor = new ChangeSetJsonFieldValueVisitor(out);
                 out.beginObject();
                 out.name("state");
                 out.value("create");
@@ -40,7 +40,6 @@ public class ChangeValuesGsonAdapter {
 
             @Override
             public void visitUpdate(Key key, FieldsValueWithPreviousScanner values) throws Exception {
-                JsonFieldValueVisitor functor = new ChangeSetJsonFieldValueVisitor(out);
                 out.beginObject();
                 out.name("state");
                 out.value("update");
@@ -60,7 +59,7 @@ public class ChangeValuesGsonAdapter {
 
                 out.name("oldValue");
                 out.beginObject();
-                values.safeAccept(functor.withoutKey());
+                values.safeAcceptOnPrevious(functor.withoutKey());
 
                 out.endObject();
 
@@ -69,7 +68,6 @@ public class ChangeValuesGsonAdapter {
 
             @Override
             public void visitDeletion(Key key, FieldsValueScanner previousValues) throws Exception {
-                JsonFieldValueVisitor functor = new ChangeSetJsonFieldValueVisitor(out);
                 out.beginObject();
 
                 out.name("state");
@@ -94,7 +92,7 @@ public class ChangeValuesGsonAdapter {
         out.endArray();
     }
 
-    static class ChangeSetJsonFieldValueVisitor extends JsonFieldValueVisitor {
+    static public class ChangeSetJsonFieldValueVisitor extends JsonFieldValueVisitor {
 
         public ChangeSetJsonFieldValueVisitor(JsonWriter jsonWriter) {
             super(jsonWriter);
@@ -103,8 +101,8 @@ public class ChangeValuesGsonAdapter {
         public void addGlobAttributes(Glob v) {
             Field[] fields = v.getType().getKeyFields();
             if (fields.length == 0) {
-                throw new RuntimeException("Only type with key are allowed in a changeSet");
-//                super.addGlobAttributes(v);
+//                throw new RuntimeException("Only type with key are allowed in a changeSet " + GSonUtils.encode(v, true)); //Pourquoi ?
+                super.addGlobAttributes(v);
             } else {
                 v.getKey().safeAcceptOnKeyField(this);
             }
