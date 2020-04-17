@@ -1,4 +1,4 @@
-package org.globsframework.json;
+package org.globsframework.json.annottations;
 
 import org.globsframework.metamodel.GlobType;
 import org.globsframework.metamodel.GlobTypeLoaderFactory;

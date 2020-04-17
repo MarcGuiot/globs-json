@@ -1,6 +1,7 @@
 package org.globsframework.json;
 
 import com.google.gson.Gson;
+import org.globsframework.json.annottations.IsJsonContentType;
 import org.globsframework.metamodel.GlobModel;
 import org.globsframework.metamodel.GlobType;
 import org.globsframework.metamodel.GlobTypeLoaderFactory;
@@ -166,7 +167,7 @@ public class GlobWithGlobFieldAndUnion {
     }
 
     private Gson init(GlobType... types) {
-        GlobModel globTypes = new DefaultGlobModel(new DefaultGlobModel(AnnotationModel.MODEL, types), LocalType.TYPE, SubFirstType.TYPE, SubSecondType.TYPE, IsJsonContentType.TYPE);
+        GlobModel globTypes = new DefaultGlobModel(new DefaultGlobModel(AllAnnotations.MODEL, types), LocalType.TYPE, SubFirstType.TYPE, SubSecondType.TYPE, IsJsonContentType.TYPE);
         return GlobsGson.create(globTypes::getType);
     }
 
@@ -257,5 +258,8 @@ public class GlobWithGlobFieldAndUnion {
         Assert.assertEquals("subFirst second level", glob2.get(SubFirstType.NAME));
         Assert.assertEquals("subFirst array Data", glob1.get(LocalType.ARRAY_OF_UNIONS)[0].get(SubFirstType.DATA));
         Assert.assertEquals(3.1415, glob1.get(LocalType.ARRAY_OF_UNIONS)[1].get(SubSecondType.VALUE), 0.001);
+
+        Glob mutableGlob1 = gson.fromJson(A_GLOB, MutableGlob.class);
+        Assert.assertEquals("subFirst Data", mutableGlob1.get(LocalType.SECOND_TYPE).get(SubFirstType.DATA));
     }
 }

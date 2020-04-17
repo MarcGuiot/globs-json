@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.globsframework.metamodel.GlobType;
 import org.globsframework.metamodel.GlobTypeBuilder;
-import org.globsframework.metamodel.annotations.AnnotationModel;
+import org.globsframework.metamodel.annotations.AllAnnotations;
 import org.globsframework.metamodel.fields.DoubleField;
 import org.globsframework.metamodel.fields.IntegerField;
 import org.globsframework.metamodel.fields.StringField;
@@ -44,7 +44,7 @@ public class PerfReadWriteTest {
                 .set(anInt, i)
                 .set(aDouble, i))
                 .collect(Collectors.toList());
-        DefaultGlobModel globTypes = new DefaultGlobModel(AnnotationModel.MODEL, globType);
+        DefaultGlobModel globTypes = new DefaultGlobModel(AllAnnotations.MODEL, globType);
         Gson gson = GlobsGson.create(globTypes::getType);
         String s = "";
         s = write(collect, gson, s);

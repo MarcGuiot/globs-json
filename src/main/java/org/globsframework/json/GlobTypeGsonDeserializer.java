@@ -17,17 +17,19 @@ class GlobTypeGsonDeserializer {
     private static Logger LOGGER = LoggerFactory.getLogger(GlobGSonDeserializer.class);
     private final GlobGSonDeserializer globGSonDeserializer;
     private final GlobTypeResolver globTypeResolver;
+    private boolean ignoreUnknownAnnotation;
     private final Map<String, GlobType> types = new ConcurrentHashMap<>(); // pour gérer la recursivitée liée au Union/GlobField
 
-    GlobTypeGsonDeserializer(GlobGSonDeserializer globGSonDeserializer, GlobTypeResolver globTypeResolver) {
+    GlobTypeGsonDeserializer(GlobGSonDeserializer globGSonDeserializer, GlobTypeResolver globTypeResolver, boolean ignoreUnknownAnnotation) {
         this.globGSonDeserializer = globGSonDeserializer;
         this.globTypeResolver = name -> {
             GlobType globType = types.get(name);
             if (globType != null) {
                 return globType;
             }
-            return globTypeResolver.get(name);
+            return globTypeResolver.find(name);
         };
+        this.ignoreUnknownAnnotation = ignoreUnknownAnnotation;
     }
 
     GlobType deserialize(JsonElement json) throws JsonParseException {
@@ -158,7 +160,7 @@ class GlobTypeGsonDeserializer {
             globList = new ArrayList<>();
             for (JsonElement annotation : annotations) {
                 if (annotation != null) {
-                    globList.add(globGSonDeserializer.deserialize(annotation, globTypeResolver));
+                    globList.add(globGSonDeserializer.deserialize(annotation, globTypeResolver, ignoreUnknownAnnotation));
                 }
             }
         }

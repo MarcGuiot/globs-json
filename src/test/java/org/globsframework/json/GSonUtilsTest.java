@@ -1,5 +1,6 @@
 package org.globsframework.json;
 
+import org.globsframework.json.annottations.JsonDateTimeFormatAnnotation;
 import org.globsframework.metamodel.GlobType;
 import org.globsframework.metamodel.GlobTypeLoaderFactory;
 import org.globsframework.metamodel.annotations.KeyField;
@@ -8,7 +9,6 @@ import org.globsframework.metamodel.fields.DateTimeField;
 import org.globsframework.metamodel.fields.IntegerField;
 import org.globsframework.metamodel.fields.StringField;
 import org.globsframework.model.Glob;
-import org.globsframework.model.MutableGlob;
 import org.junit.Assert;
 import org.junit.Test;
 

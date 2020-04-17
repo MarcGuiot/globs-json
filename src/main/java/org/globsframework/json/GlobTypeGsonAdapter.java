@@ -26,7 +26,7 @@ class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
     public GlobTypeGsonAdapter(boolean forceSort, GlobTypeResolver globTypeResolver) {
         this.forceSort = forceSort;
         this.globTypeResolver = globTypeResolver;
-        globTypeGsonDeserializer = new GlobTypeGsonDeserializer(new GlobGSonDeserializer(), globTypeResolver);
+        globTypeGsonDeserializer = new GlobTypeGsonDeserializer(new GlobGSonDeserializer(), globTypeResolver, false);
     }
 
     public void write(JsonWriter out, GlobType type) throws IOException {

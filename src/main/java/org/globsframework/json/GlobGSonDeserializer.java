@@ -5,8 +5,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import org.globsframework.metamodel.Field;
 import org.globsframework.metamodel.GlobType;
-import org.globsframework.model.Glob;
-import org.globsframework.model.MutableGlob;
+import org.globsframework.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +27,7 @@ public class GlobGSonDeserializer {
     }
 
 
-    public static Glob deserialize(JsonElement json, GlobTypeResolver globTypeResolver) throws JsonParseException {
+    public static Glob deserialize(JsonElement json, GlobTypeResolver globTypeResolver, boolean ignoreUnknownAnnotation) throws JsonParseException {
         if (json == null || json instanceof JsonNull) {
             return null;
         }
@@ -36,7 +35,11 @@ public class GlobGSonDeserializer {
         try {
             JsonObject jsonObject = (JsonObject) json;
             String type = jsonObject.get(GlobsGson.KIND_NAME).getAsString();
-            GlobType globType = globTypeResolver.get(type);
+            GlobType globType = ignoreUnknownAnnotation ? globTypeResolver.find(type) : globTypeResolver.get(type);
+            if (globType == null) {
+                LOGGER.debug("Ignoring annotation " + type);
+                return null;
+            }
             instantiate = readGlob(jsonObject, globType);
         } catch (Exception e) {
             LOGGER.error("Fail to parse : " + GSON.toJson(json), e);
@@ -59,6 +62,11 @@ public class GlobGSonDeserializer {
 
     public static Glob readFields(JsonReader in, GlobType globType) throws IOException {
         MutableGlob instantiate = globType.instantiate();
+        read(in, globType, instantiate);
+        return instantiate;
+    }
+
+    private static void read(JsonReader in, GlobType globType, FieldSetter instantiate) throws IOException {
         while (in.hasNext() && in.peek() == JsonToken.NAME) {
             String name = in.nextName();
             Field field = globType.findField(name);
@@ -73,10 +81,12 @@ public class GlobGSonDeserializer {
                 in.skipValue();
             }
         }
-        return instantiate;
     }
 
     public static Glob read(JsonReader in, GlobTypeResolver resolver) throws IOException {
+        if (in.peek() == JsonToken.NULL) {
+            return null;
+        }
         in.beginObject();
         if (in.hasNext() && in.peek() != JsonToken.END_OBJECT) {
             String name = in.nextName();
@@ -87,6 +97,27 @@ public class GlobGSonDeserializer {
                 return glob;
             } else {
                 return readFieldByField(in, name, resolver);
+            }
+        }
+        return null;
+    }
+
+    public static Key readKey(JsonReader in, GlobTypeResolver resolver) throws IOException {
+        if (in.peek() == JsonToken.NULL) {
+            return null;
+        }
+        in.beginObject();
+        if (in.hasNext() && in.peek() != JsonToken.END_OBJECT) {
+            String name = in.nextName();
+            if (name.equalsIgnoreCase(GlobsGson.KIND_NAME)) {
+                String kind = in.nextString();
+                GlobType type = resolver.get(kind);
+                KeyBuilder keyBuilder = KeyBuilder.init(type);
+                read(in, type, keyBuilder);
+                in.endObject();
+                return keyBuilder.get();
+            } else {
+                return readKeyFieldByField(in, name, resolver);
             }
         }
         return null;
@@ -113,6 +144,29 @@ public class GlobGSonDeserializer {
             }
         }
         return instantiate;
+    }
+
+    private static Key readKeyFieldByField(JsonReader in, String name, GlobTypeResolver resolver) throws IOException {
+        JsonParser jsonParser = new JsonParser();
+        Map<String, JsonElement> values = new HashMap<>();
+        values.put(name, jsonParser.parse(in));
+        while (in.peek() != JsonToken.END_OBJECT) {
+            values.put(in.nextName(), jsonParser.parse(in));
+        }
+        in.endObject();
+        JsonElement kindElement = values.get(GlobsGson.KIND_NAME);
+        if (kindElement == null) {
+            throw new RuntimeException("kind not found in " + values);
+        }
+        GlobType type = resolver.get(kindElement.getAsString());
+        KeyBuilder instantiate = KeyBuilder.init(type);
+        for (Map.Entry<String, JsonElement> stringJsonElementEntry : values.entrySet()) {
+            Field field = type.findField(stringJsonElementEntry.getKey());
+            if (field != null) {
+                field.safeVisit(G_SON_VISITOR, stringJsonElementEntry.getValue(), instantiate);
+            }
+        }
+        return instantiate.get();
     }
 
 }

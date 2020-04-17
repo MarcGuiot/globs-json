@@ -1,4 +1,4 @@
-package org.globsframework.json;
+package org.globsframework.json.annottations;
 
 import org.globsframework.metamodel.GlobType;
 
@@ -8,9 +8,7 @@ import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
 @java.lang.annotation.Target({ElementType.FIELD})
-public @interface JsonDateFormatAnnotation {
+public @interface IsJsonContentAnnotation {
 
-    String value();
-
-    public GlobType TYPE = JsonDateFormatType.TYPE;
+    public GlobType TYPE = IsJsonContentType.TYPE;
 }

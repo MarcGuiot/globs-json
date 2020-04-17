@@ -22,11 +22,13 @@ class GlobTypeArrayGsonAdapter extends TypeAdapter<GlobType> {
     private final boolean forceSort;
     private GlobTypeResolver globTypeResolver;
     private GlobTypeGsonDeserializer globTypeGsonDeserializer;
+    private boolean ignoreUnknownAnnotation;
 
-    public GlobTypeArrayGsonAdapter(boolean forceSort, GlobTypeResolver globTypeResolver) {
+    public GlobTypeArrayGsonAdapter(boolean forceSort, GlobTypeResolver globTypeResolver, boolean ignoreUnknownAnnotation) {
         this.forceSort = forceSort;
         this.globTypeResolver = globTypeResolver;
-        globTypeGsonDeserializer = new GlobTypeGsonDeserializer(new GlobGSonDeserializer(), globTypeResolver);
+        this.globTypeGsonDeserializer = new GlobTypeGsonDeserializer(new GlobGSonDeserializer(), globTypeResolver, ignoreUnknownAnnotation);
+        this.ignoreUnknownAnnotation = ignoreUnknownAnnotation;
     }
 
     public void write(JsonWriter out, GlobType type) throws IOException {

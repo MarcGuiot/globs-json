@@ -19,7 +19,7 @@ public class LoadingGlobTypeResolverTest {
         LoadingGlobTypeResolver.Builder builder = LoadingGlobTypeResolver.builder(name -> {
             return name.equals("type3") ? globType3 : null;
         });
-        builder.add(new StringReader("{ \n" +
+        builder.read(new StringReader("{ \n" +
                 "  \"kind\": \"type2\",\n" +
                 "  \"fields\": [\n" +
                 "    {\n" +
@@ -30,7 +30,7 @@ public class LoadingGlobTypeResolverTest {
                 "  ]\n" +
                 "}"));
 
-        builder.add(new StringReader("[\n" +
+        builder.read(new StringReader("[\n" +
                 "  {\n" +
                 "    \"kind\": \"type1\",\n" +
                 "    \"fields\": [\n" +

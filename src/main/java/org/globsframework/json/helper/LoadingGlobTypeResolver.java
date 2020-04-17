@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import java.io.Reader;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 public class LoadingGlobTypeResolver implements GlobTypeResolver {
@@ -38,7 +37,7 @@ public class LoadingGlobTypeResolver implements GlobTypeResolver {
             this.globTypeResolver = globTypeResolver;
         }
 
-        public void add(Reader reader) {
+        public void read(Reader reader) {
             extractJsonType(reader, typeToJsonObject);
         }
 
@@ -52,7 +51,7 @@ public class LoadingGlobTypeResolver implements GlobTypeResolver {
 
     public static Collection<GlobType> parse(Reader reader, GlobTypeAccessor globTypeResolver) {
         Builder builder = new Builder(globTypeResolver);
-        builder.add(reader);
+        builder.read(reader);
         return builder.read();
     }
 
@@ -78,7 +77,7 @@ public class LoadingGlobTypeResolver implements GlobTypeResolver {
         }
     }
 
-    public GlobType get(String s) {
+    public GlobType find(String s) {
         GlobType globType = created.get(s);
         if (globType != null) {
             return globType;
@@ -88,11 +87,6 @@ public class LoadingGlobTypeResolver implements GlobTypeResolver {
             JsonObject typeToLoad = typesToLoad.get(s);
             wanted = gson.fromJson(typeToLoad, GlobType.class);
             created.put(s, wanted);
-        }
-        if (wanted == null) {
-            String msg = "type " + s + " not found.";
-            LOGGER.error(msg);
-            throw new RuntimeException(msg);
         }
         return wanted;
     }

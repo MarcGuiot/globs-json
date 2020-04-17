@@ -8,7 +8,7 @@ import org.globsframework.model.Glob;
 
 import java.io.IOException;
 
-class GlobGsonAdapter extends TypeAdapter<Glob> {
+public class GlobGsonAdapter extends TypeAdapter<Glob> {
     private final GlobTypeResolver resolver;
 
     public GlobGsonAdapter(GlobTypeResolver resolver) {
@@ -20,6 +20,10 @@ class GlobGsonAdapter extends TypeAdapter<Glob> {
             out.nullValue();
             return;
         }
+        writeGlob(out, value);
+    }
+
+    public static void writeGlob(JsonWriter out, Glob value) throws IOException {
         out.beginObject();
         GlobType type = value.getType();
         out.name(GlobsGson.KIND_NAME).value(type.getName());

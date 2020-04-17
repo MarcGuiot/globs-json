@@ -1,12 +1,10 @@
-package org.globsframework.json;
+package org.globsframework.json.annottations;
 
 import org.globsframework.metamodel.GlobType;
 import org.globsframework.metamodel.GlobTypeLoaderFactory;
 import org.globsframework.metamodel.annotations.GlobCreateFromAnnotation;
-import org.globsframework.metamodel.annotations.InitUniqueGlob;
 import org.globsframework.metamodel.annotations.InitUniqueKey;
 import org.globsframework.metamodel.fields.StringField;
-import org.globsframework.model.Glob;
 import org.globsframework.model.Key;
 
 public class JsonDateFormatType {

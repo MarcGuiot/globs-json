@@ -3,8 +3,10 @@ package org.globsframework.json;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import org.globsframework.json.annottations.IsJsonContentAnnotation;
+import org.globsframework.json.annottations.IsJsonContentType;
 import org.globsframework.metamodel.*;
-import org.globsframework.metamodel.annotations.AnnotationModel;
+import org.globsframework.metamodel.annotations.AllAnnotations;
 import org.globsframework.metamodel.annotations.FieldNameAnnotation;
 import org.globsframework.metamodel.annotations.KeyField;
 import org.globsframework.metamodel.annotations.Required;
@@ -108,7 +110,7 @@ public class GlobsGsonAdapterTest {
     }
 
     private Gson init(GlobType... types) {
-        GlobModel globTypes = new DefaultGlobModel(new DefaultGlobModel(AnnotationModel.MODEL, types), LocalType.TYPE, IsJsonContentType.TYPE);
+        GlobModel globTypes = new DefaultGlobModel(new DefaultGlobModel(AllAnnotations.MODEL, types), LocalType.TYPE, IsJsonContentType.TYPE);
         return GlobsGson.create(globTypes::getType);
     }
 

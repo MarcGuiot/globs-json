@@ -1,6 +1,7 @@
 package org.globsframework.json;
 
 import com.google.gson.stream.JsonWriter;
+import org.globsframework.json.annottations.IsJsonContentType;
 import org.globsframework.metamodel.fields.*;
 import org.globsframework.model.Glob;
 

@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import org.globsframework.metamodel.GlobType;
 import org.globsframework.model.ChangeSet;
 import org.globsframework.model.Glob;
+import org.globsframework.model.Key;
 
 public class GlobsGson {
 
@@ -41,17 +42,21 @@ public class GlobsGson {
 
     // WARN : GlobTypeGsonAdapter is state full : it keep the
     static public GsonBuilder createBuilder(GlobTypeResolver globTypeResolver) {
+        return createBuilder(globTypeResolver, false);
+    }
+    static public GsonBuilder createBuilder(GlobTypeResolver globTypeResolver, boolean ignoreUnknownAnnotation) {
         return new GsonBuilder()
 //              .registerTypeHierarchyAdapter(GlobType.class, new GlobTypeGsonAdapter(false, globTypeResolver))
                 .registerTypeHierarchyAdapter(ChangeSet.class, new ChangeSetGsonAdapter())
-                .registerTypeHierarchyAdapter(GlobType.class, new GlobTypeArrayGsonAdapter(false, globTypeResolver))
+                .registerTypeHierarchyAdapter(GlobType.class, new GlobTypeArrayGsonAdapter(false, globTypeResolver, ignoreUnknownAnnotation))
                 .registerTypeHierarchyAdapter(Glob.class, new GlobGsonAdapter(globTypeResolver))
+//                .registerTypeHierarchyAdapter(Key.class, new KeyGsonAdapter(globTypeResolver)) // not possible because AbstrctGlob inherit from Key...
                 .registerTypeHierarchyAdapter(PreChangeSet.class, new PreChangeSetGsonAdapter(globTypeResolver))
                 ;
     }
 
 
     public static Gson create(GlobTypeResolver globTypeResolver) {
-        return createBuilder(globTypeResolver).create();
+        return createBuilder(globTypeResolver, false).create();
     }
 }
