@@ -39,10 +39,10 @@ public class PerfReadWriteTest {
         List<MutableGlob> collect = IntStream.range(0, 1000)
                 .mapToObj(i ->
                         globType.instantiate()
-                .set(str_1, "str_1_" + i)
-                .set(str_2, "str_2_" + i)
-                .set(anInt, i)
-                .set(aDouble, i))
+                                .set(str_1, "str_1_" + i)
+                                .set(str_2, "str_2_" + i)
+                                .set(anInt, i)
+                                .set(aDouble, i))
                 .collect(Collectors.toList());
         DefaultGlobModel globTypes = new DefaultGlobModel(AllAnnotations.MODEL, globType);
         Gson gson = GlobsGson.create(globTypes::getType);

@@ -19,73 +19,71 @@ class JsonFieldValueVisitor implements FieldValueVisitor {
     }
 
     public void visitInteger(IntegerField field, Integer value) throws Exception {
-        if (value != null) {
-            jsonWriter.name(field.getName());
-            jsonWriter.value(value);
-        }
+        jsonWriter.name(field.getName());
+        jsonWriter.value(value);
     }
 
     public void visitIntegerArray(IntegerArrayField field, int[] value) throws Exception {
+        jsonWriter.name(field.getName());
         if (value != null) {
-            jsonWriter.name(field.getName());
             jsonWriter.beginArray();
             for (int i : value) {
                 jsonWriter.value(i);
             }
             jsonWriter.endArray();
+        } else {
+            jsonWriter.nullValue();
         }
     }
 
     public void visitDouble(DoubleField field, Double value) throws Exception {
-        if (value != null) {
-            jsonWriter.name(field.getName());
-            jsonWriter.value(value);
-        }
+        jsonWriter.name(field.getName());
+        jsonWriter.value(value);
     }
 
     public void visitDoubleArray(DoubleArrayField field, double[] value) throws Exception {
+        jsonWriter.name(field.getName());
         if (value != null) {
-            jsonWriter.name(field.getName());
             jsonWriter.beginArray();
             for (double v : value) {
                 jsonWriter.value(v);
             }
             jsonWriter.endArray();
+        } else {
+            jsonWriter.nullValue();
         }
     }
 
     public void visitBigDecimal(BigDecimalField field, BigDecimal value) throws Exception {
-        if (value != null) {
-            jsonWriter.name(field.getName());
-            jsonWriter.value(value);
-        }
+        jsonWriter.name(field.getName());
+        jsonWriter.value(value);
     }
 
     public void visitBigDecimalArray(BigDecimalArrayField field, BigDecimal[] value) throws Exception {
+        jsonWriter.name(field.getName());
         if (value != null) {
-            jsonWriter.name(field.getName());
             jsonWriter.beginArray();
             for (BigDecimal v : value) {
                 jsonWriter.value(v);
             }
             jsonWriter.endArray();
+        } else {
+            jsonWriter.nullValue();
         }
     }
 
     public void visitString(StringField field, String value) throws Exception {
-        if (value != null) {
-            jsonWriter.name(field.getName());
-            if (field.hasAnnotation(IsJsonContentType.UNIQUE_KEY)) {
-                jsonWriter.jsonValue(value);
-            } else {
-                jsonWriter.value(value);
-            }
+        jsonWriter.name(field.getName());
+        if (field.hasAnnotation(IsJsonContentType.UNIQUE_KEY)) {
+            jsonWriter.jsonValue(value);
+        } else {
+            jsonWriter.value(value);
         }
     }
 
     public void visitStringArray(StringArrayField field, String[] value) throws Exception {
+        jsonWriter.name(field.getName());
         if (value != null) {
-            jsonWriter.name(field.getName());
             jsonWriter.beginArray();
             for (String v : value) {
                 if (field.hasAnnotation(IsJsonContentType.UNIQUE_KEY)) {
@@ -95,80 +93,90 @@ class JsonFieldValueVisitor implements FieldValueVisitor {
                 }
             }
             jsonWriter.endArray();
+        } else {
+            jsonWriter.nullValue();
         }
     }
 
     public void visitBoolean(BooleanField field, Boolean value) throws Exception {
-        if (value != null) {
-            jsonWriter.name(field.getName());
-            jsonWriter.value(value);
-        }
+        jsonWriter.name(field.getName());
+        jsonWriter.value(value);
     }
 
     public void visitBooleanArray(BooleanArrayField field, boolean[] value) throws Exception {
+        jsonWriter.name(field.getName());
         if (value != null) {
-            jsonWriter.name(field.getName());
             jsonWriter.beginArray();
             for (boolean v : value) {
                 jsonWriter.value(v);
             }
             jsonWriter.endArray();
+        } else {
+            jsonWriter.nullValue();
         }
     }
 
     public void visitLong(LongField field, Long value) throws Exception {
-        if (value != null) {
-            jsonWriter.name(field.getName());
-            jsonWriter.value(value);
-        }
+        jsonWriter.name(field.getName());
+        jsonWriter.value(value);
     }
 
     public void visitLongArray(LongArrayField field, long[] value) throws Exception {
+        jsonWriter.name(field.getName());
         if (value != null) {
-            jsonWriter.name(field.getName());
             jsonWriter.beginArray();
             for (long v : value) {
                 jsonWriter.value(v);
             }
             jsonWriter.endArray();
+        } else {
+            jsonWriter.nullValue();
         }
     }
 
     public void visitDate(DateField field, LocalDate value) throws Exception {
+        DateTimeFormatter cachedDateTimeFormatter = GSonUtils.getCachedDateFormatter(field);
+        jsonWriter.name(field.getName());
         if (value != null) {
-            DateTimeFormatter cachedDateTimeFormatter = GSonUtils.getCachedDateFormatter(field);
-            jsonWriter.name(field.getName());
             jsonWriter.value(cachedDateTimeFormatter.format(value));
+        } else {
+            jsonWriter.nullValue();
         }
     }
 
     public void visitDateTime(DateTimeField field, ZonedDateTime value) throws Exception {
+        DateTimeFormatter timeFormatter = GSonUtils.getCachedDateTimeFormatter(field);
+        jsonWriter.name(field.getName());
         if (value != null) {
-            DateTimeFormatter timeFormatter = GSonUtils.getCachedDateTimeFormatter(field);
-            jsonWriter.name(field.getName());
             jsonWriter.value(timeFormatter.format(value));
+        } else {
+            jsonWriter.nullValue();
         }
     }
 
     public void visitBlob(BlobField field, byte[] value) throws Exception {
+        jsonWriter.name(field.getName());
         if (value != null) {
-            jsonWriter.name(field.getName());
             jsonWriter.value(Base64.getEncoder().encodeToString(value));
+        } else {
+            jsonWriter.nullValue();
         }
     }
 
     public void visitGlob(GlobField field, Glob value) throws Exception {
+        jsonWriter.name(field.getName());
         if (value != null) {
-            jsonWriter.name(field.getName());
             jsonWriter.beginObject();
             addGlobAttributes(value);
             jsonWriter.endObject();
+        } else {
+            jsonWriter.nullValue();
         }
     }
 
     public void visitGlobArray(GlobArrayField field, Glob[] value) throws Exception {
+        jsonWriter.name(field.getName());
         if (value != null) {
-            jsonWriter.name(field.getName());
             jsonWriter.beginArray();
             for (Glob v : value) {
                 jsonWriter.beginObject();
@@ -176,6 +184,8 @@ class JsonFieldValueVisitor implements FieldValueVisitor {
                 jsonWriter.endObject();
             }
             jsonWriter.endArray();
+        } else {
+            jsonWriter.nullValue();
         }
     }
 
@@ -184,8 +194,8 @@ class JsonFieldValueVisitor implements FieldValueVisitor {
     }
 
     public void visitUnionGlob(GlobUnionField field, Glob value) throws Exception {
+        jsonWriter.name(field.getName());
         if (value != null) {
-            jsonWriter.name(field.getName());
             jsonWriter.beginObject();
             jsonWriter.name(value.getType().getName());
             jsonWriter.beginObject();
@@ -193,11 +203,14 @@ class JsonFieldValueVisitor implements FieldValueVisitor {
             jsonWriter.endObject();
             jsonWriter.endObject();
         }
+        else {
+            jsonWriter.nullValue();
+        }
     }
 
     public void visitUnionGlobArray(GlobArrayUnionField field, Glob[] value) throws Exception {
+        jsonWriter.name(field.getName());
         if (value != null) {
-            jsonWriter.name(field.getName());
             jsonWriter.beginArray();
             for (Glob v : value) {
                 jsonWriter.beginObject();
@@ -209,6 +222,8 @@ class JsonFieldValueVisitor implements FieldValueVisitor {
             }
             jsonWriter.endArray();
         }
-
+        else {
+            jsonWriter.nullValue();
+        }
     }
 }
