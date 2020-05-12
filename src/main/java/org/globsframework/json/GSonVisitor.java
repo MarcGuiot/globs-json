@@ -60,7 +60,7 @@ public abstract class GSonVisitor implements FieldVisitorWithTwoContext<JsonElem
                }
            }
        } else {
-           fieldSetter.set(stringField, element.getAsString());
+           fieldSetter.set(stringField, element.getAsString().intern());
        }
    }
 
@@ -82,7 +82,7 @@ public abstract class GSonVisitor implements FieldVisitorWithTwoContext<JsonElem
                    }
                }
            } else {
-               value[i] = element.getAsString();
+               value[i] = element.getAsString().intern();
            }
            ++i;
        }
