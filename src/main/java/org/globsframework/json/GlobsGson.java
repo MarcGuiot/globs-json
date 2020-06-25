@@ -42,13 +42,14 @@ public class GlobsGson {
 
     // WARN : GlobTypeGsonAdapter is state full : it keep the
     static public GsonBuilder createBuilder(GlobTypeResolver globTypeResolver) {
-        return createBuilder(globTypeResolver, false);
+        return createBuilder(globTypeResolver, true);
     }
     static public GsonBuilder createBuilder(GlobTypeResolver globTypeResolver, boolean ignoreUnknownAnnotation) {
         return new GsonBuilder()
 //              .registerTypeHierarchyAdapter(GlobType.class, new GlobTypeGsonAdapter(false, globTypeResolver))
                 .registerTypeHierarchyAdapter(ChangeSet.class, new ChangeSetGsonAdapter())
                 .registerTypeHierarchyAdapter(GlobType.class, new GlobTypeArrayGsonAdapter(false, globTypeResolver, ignoreUnknownAnnotation))
+                .registerTypeHierarchyAdapter(GlobTypeSet.class, new GlobTypeSetAdapter(false, globTypeResolver, ignoreUnknownAnnotation))
                 .registerTypeHierarchyAdapter(Glob.class, new GlobGsonAdapter(globTypeResolver))
 //                .registerTypeHierarchyAdapter(Key.class, new KeyGsonAdapter(globTypeResolver)) // not possible because AbstrctGlob inherit from Key...
                 .registerTypeHierarchyAdapter(PreChangeSet.class, new PreChangeSetGsonAdapter(globTypeResolver))

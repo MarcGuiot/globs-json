@@ -2,6 +2,11 @@ package org.globsframework.json;
 
 import org.globsframework.metamodel.GlobType;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 public interface GlobTypeResolver {
     GlobType find(String name);
 
@@ -29,5 +34,14 @@ public interface GlobTypeResolver {
         public TypeNotFound(String name) {
             super("type '" + name + "' not found.");
         }
+    }
+
+    GlobTypeResolver ERROR = name -> {
+        throw new TypeNotFound(name);
+    };
+
+    static GlobTypeResolver from(GlobType... types){
+        Map<String, GlobType> collect = Arrays.asList(types).stream().collect(Collectors.toMap(GlobType::getName, Function.identity()));
+        return collect::get;
     }
 }

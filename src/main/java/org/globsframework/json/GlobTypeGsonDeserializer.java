@@ -160,7 +160,7 @@ class GlobTypeGsonDeserializer {
             globList = new ArrayList<>();
             for (JsonElement annotation : annotations) {
                 if (annotation != null) {
-                    globList.add(globGSonDeserializer.deserialize(annotation, globTypeResolver, ignoreUnknownAnnotation));
+                    globList.add(GlobGSonDeserializer.deserialize(annotation, globTypeResolver, ignoreUnknownAnnotation));
                 }
             }
         }

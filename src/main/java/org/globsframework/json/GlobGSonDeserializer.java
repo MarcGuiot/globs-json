@@ -3,6 +3,7 @@ package org.globsframework.json;
 import com.google.gson.*;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
+import org.globsframework.json.annottations.UnknownAnnotation;
 import org.globsframework.metamodel.Field;
 import org.globsframework.metamodel.GlobType;
 import org.globsframework.model.*;
@@ -10,8 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class GlobGSonDeserializer {
     public static final Gson GSON = new Gson();
@@ -26,7 +29,6 @@ public class GlobGSonDeserializer {
     public GlobGSonDeserializer() {
     }
 
-
     public static Glob deserialize(JsonElement json, GlobTypeResolver globTypeResolver, boolean ignoreUnknownAnnotation) throws JsonParseException {
         if (json == null || json instanceof JsonNull) {
             return null;
@@ -35,10 +37,17 @@ public class GlobGSonDeserializer {
         try {
             JsonObject jsonObject = (JsonObject) json;
             String type = jsonObject.get(GlobsGson.KIND_NAME).getAsString();
+            if (type.equals(UnknownAnnotation.TYPE.getName())) {
+                MutableGlob mutableGlob = readGlob(jsonObject, UnknownAnnotation.TYPE);
+                JsonParser jsonParser = new JsonParser();
+                return deserialize(jsonParser.parse(new StringReader(mutableGlob.get(UnknownAnnotation.CONTENT))), globTypeResolver, ignoreUnknownAnnotation);
+            }
             GlobType globType = ignoreUnknownAnnotation ? globTypeResolver.find(type) : globTypeResolver.get(type);
             if (globType == null) {
-                LOGGER.debug("Ignoring annotation " + type);
-                return null;
+                LOGGER.debug("Unknown annotation " + type);
+                return UnknownAnnotation.TYPE.instantiate()
+                        .set(UnknownAnnotation.uuid, UUID.randomUUID().toString())
+                        .set(UnknownAnnotation.CONTENT, GSON.toJson(json));
             }
             instantiate = readGlob(jsonObject, globType);
         } catch (Exception e) {

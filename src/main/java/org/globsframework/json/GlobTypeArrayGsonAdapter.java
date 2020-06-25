@@ -4,6 +4,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import org.globsframework.json.annottations.UnknownAnnotation;
 import org.globsframework.metamodel.Field;
 import org.globsframework.metamodel.GlobType;
 import org.globsframework.metamodel.annotations.FieldNameAnnotationType;
@@ -49,21 +50,17 @@ class GlobTypeArrayGsonAdapter extends TypeAdapter<GlobType> {
                         writeField(field, GlobsGson.INT_TYPE, out);
                     }
 
-
                     public void visitIntegerArray(IntegerArrayField field) throws Exception {
                         writeField(field, GlobsGson.INT_ARRAY_TYPE, out);
                     }
-
 
                     public void visitDouble(DoubleField field) throws Exception {
                         writeField(field, GlobsGson.DOUBLE_TYPE, out);
                     }
 
-
                     public void visitDoubleArray(DoubleArrayField field) throws Exception {
                         writeField(field, GlobsGson.DOUBLE_ARRAY_TYPE, out);
                     }
-
 
                     public void visitBigDecimal(BigDecimalField field) throws Exception {
                         writeField(field, GlobsGson.BIG_DECIMAL_TYPE, out);
@@ -78,46 +75,37 @@ class GlobTypeArrayGsonAdapter extends TypeAdapter<GlobType> {
                         writeField(field, GlobsGson.STRING_TYPE, out);
                     }
 
-
                     public void visitStringArray(StringArrayField field) throws Exception {
                         writeField(field, GlobsGson.STRING_ARRAY_TYPE, out);
                     }
-
 
                     public void visitBoolean(BooleanField field) throws Exception {
                         writeField(field, GlobsGson.BOOLEAN_TYPE, out);
                     }
 
-
                     public void visitBooleanArray(BooleanArrayField field) throws Exception {
                         writeField(field, GlobsGson.BOOLEAN_ARRAY_TYPE, out);
                     }
-
 
                     public void visitLong(LongField field) throws Exception {
                         writeField(field, GlobsGson.LONG_TYPE, out);
                     }
 
-
                     public void visitLongArray(LongArrayField field) throws Exception {
                         writeField(field, GlobsGson.LONG_ARRAY_TYPE, out);
                     }
-
 
                     public void visitDate(DateField field) throws Exception {
                         writeField(field, GlobsGson.DATE_TYPE, out);
                     }
 
-
                     public void visitDateTime(DateTimeField field) throws Exception {
                         writeField(field, GlobsGson.DATE_TIME_TYPE, out);
                     }
 
-
                     public void visitBlob(BlobField field) throws Exception {
                         writeField(field, GlobsGson.BLOB_TYPE, out);
                     }
-
 
                     public void visitGlob(GlobField field) throws Exception {
                         writeField(field, GlobsGson.GLOB_TYPE, out, jsonWriter -> {
@@ -187,12 +175,16 @@ class GlobTypeArrayGsonAdapter extends TypeAdapter<GlobType> {
             out.name(GlobsGson.ANNOTATIONS);
             out.beginArray();
             for (Glob glob : collect) {
-                globGsonAdapter.write(out, glob);
+                if (glob.getType().equals(UnknownAnnotation.TYPE)) {
+                    out.jsonValue(glob.get(UnknownAnnotation.CONTENT));
+                }
+                else {
+                    globGsonAdapter.write(out, glob);
+                }
             }
             out.endArray();
         }
     }
-
 
     public GlobType read(JsonReader in) {
         JsonParser jsonParser = new JsonParser();

@@ -6,5 +6,5 @@ import org.globsframework.metamodel.impl.DefaultGlobModel;
 
 public class AllAnnotations {
     public final static GlobModel MODEL =
-            new DefaultGlobModel(IsJsonContentType.TYPE, JsonDateTimeFormatType.TYPE, JsonDateFormatType.TYPE);
+            new DefaultGlobModel(IsJsonContentType.TYPE, JsonDateTimeFormatType.TYPE, JsonDateFormatType.TYPE, UnknownAnnotation.TYPE);
 }
