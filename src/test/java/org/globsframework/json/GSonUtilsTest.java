@@ -62,7 +62,7 @@ public class GSonUtilsTest {
 
 
         static {
-            GlobTypeLoaderFactory.create(LocalType.class, "test local type")
+            GlobTypeLoaderFactory.create(LocalType.class, "test local type", true)
                     .load();
         }
     }

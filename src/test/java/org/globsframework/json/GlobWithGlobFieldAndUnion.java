@@ -76,7 +76,7 @@ public class GlobWithGlobFieldAndUnion {
         public static GlobField SIMPLE_TYPE;
 
         static {
-            GlobTypeLoaderFactory.create(LocalType.class, "test local type")
+            GlobTypeLoaderFactory.create(LocalType.class, "test local type", true)
                     .load();
         }
     }
@@ -94,7 +94,7 @@ public class GlobWithGlobFieldAndUnion {
         public static GlobField PARENT;
 
         static {
-            GlobTypeLoaderFactory.create(SubFirstType.class, "subFirst")
+            GlobTypeLoaderFactory.create(SubFirstType.class, "subFirst", true)
                     .load();
         }
     }
@@ -108,7 +108,7 @@ public class GlobWithGlobFieldAndUnion {
         public static DoubleField VALUE;
 
         static {
-            GlobTypeLoaderFactory.create(SubSecondType.class, "subSecond")
+            GlobTypeLoaderFactory.create(SubSecondType.class, "subSecond", true)
                     .load();
         }
     }

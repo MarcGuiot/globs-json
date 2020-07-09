@@ -359,7 +359,7 @@ public class ChangeSetGsonTest {
         public static GlobArrayField COUNTS;
 
         static {
-            GlobTypeLoaderFactory.create(DummyType.class).load();
+            GlobTypeLoaderFactory.create(DummyType.class, true).load();
         }
     }
 
@@ -372,7 +372,7 @@ public class ChangeSetGsonTest {
         public static StringField SUB_NAME;
 
         static {
-            GlobTypeLoaderFactory.create(SubType.class).load();
+            GlobTypeLoaderFactory.create(SubType.class, true).load();
         }
     }
 
@@ -386,7 +386,7 @@ public class ChangeSetGsonTest {
         public static IntegerField COUNT;
 
         static {
-            GlobTypeLoaderFactory.create(SubTypeWWithoutKey.class).load();
+            GlobTypeLoaderFactory.create(SubTypeWWithoutKey.class, true).load();
         }
     }
 }

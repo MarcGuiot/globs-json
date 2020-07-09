@@ -54,7 +54,7 @@ public class GlobsGsonAdapterTest {
         public static DoubleField VALUE;
 
         static {
-            GlobTypeLoaderFactory.create(LocalType.class, "test local type")
+            GlobTypeLoaderFactory.create(LocalType.class, "test local type", true)
                     .load();
         }
     }
@@ -491,7 +491,7 @@ public class GlobsGsonAdapterTest {
         public static StringField DATA;
 
         static {
-            GlobTypeLoaderFactory.create(ComplexClassName.class, "#$\"\\é&à@").load();
+            GlobTypeLoaderFactory.create(ComplexClassName.class, "#$\"\\é&à@", true).load();
         }
     }
 
