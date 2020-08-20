@@ -9,7 +9,7 @@ import org.junit.Test;
 public class GlobTypeArrayTest {
 
     @Test
-    @Ignore
+//    @Ignore
     // comment faire?
     public void name() {
         String name = "[{\"kind\":\"root\",\"fields\":[{\"name\":\"__children__\",\"type\":\"globArray\",\"kind\":\"Csv\"}]}," +
