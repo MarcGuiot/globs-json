@@ -85,7 +85,7 @@ public class GSonUtils {
         }
     }
 
-    static DateTimeFormatter getCachedDateFormatter(DateField field) {
+    public static DateTimeFormatter getCachedDateFormatter(DateField field) {
         DateTimeFormatter dateConverter;
         if (field.hasAnnotation(JsonDateFormatType.UNIQUE_KEY)) {
             Glob annotation = field.getAnnotation(JsonDateFormatType.UNIQUE_KEY);
@@ -102,7 +102,7 @@ public class GSonUtils {
         return dateConverter;
     }
 
-    static DateTimeFormatter getCachedDateTimeFormatter(DateTimeField field) {
+    public static DateTimeFormatter getCachedDateTimeFormatter(DateTimeField field) {
         DateTimeFormatter dateConverter;
         if (field.hasAnnotation(JsonDateTimeFormatType.UNIQUE_KEY)) {
             Glob annotation = field.getAnnotation(JsonDateTimeFormatType.UNIQUE_KEY);
