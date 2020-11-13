@@ -7,6 +7,7 @@ import org.globsframework.metamodel.GlobType;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class GlobTypeSetAdapter extends TypeAdapter<GlobTypeSet> {
@@ -40,7 +41,7 @@ public class GlobTypeSetAdapter extends TypeAdapter<GlobTypeSet> {
             throw new RuntimeException("array expected got " + root.toString());
         }
         JsonArray asJsonArray = root.getAsJsonArray();
-        Map<String, JsonObject> typesToRead = new HashMap<>();
+        Map<String, JsonObject> typesToRead = new LinkedHashMap<>();
         for (JsonElement jsonElement : asJsonArray) {
             JsonObject jsonType = jsonElement.getAsJsonObject();
             JsonElement jsonKind = jsonType.get(GlobsGson.TYPE_NAME);
@@ -50,25 +51,35 @@ public class GlobTypeSetAdapter extends TypeAdapter<GlobTypeSet> {
             String kind = jsonKind.getAsString();
             typesToRead.put(kind, jsonType);
         }
-        Resolver resolver = new Resolver(typesToRead, ignoreUnknownAnnotation);
+        Resolver resolver = new Resolver(globTypeResolver, typesToRead, ignoreUnknownAnnotation);
         typesToRead.forEach((key, value) -> resolver.find(key));
-        return new GlobTypeSet(resolver.readTypes.values().toArray(new GlobType[0]));
+        return new GlobTypeSet(typesToRead.keySet().stream().map(resolver.readTypes::get).toArray(GlobType[]::new));
     }
 
     static class Resolver implements GlobTypeResolver {
+        private GlobTypeResolver globTypeResolver;
         final Map<String, JsonObject> typesToRead;
         final Map<String, GlobType> readTypes = new HashMap<>();
         private final GlobTypeGsonDeserializer globTypeGsonDeserializer;
 
-        Resolver(Map<String, JsonObject> typesToRead, boolean ignoreUnknownAnnotation) {
+        Resolver(GlobTypeResolver globTypeResolver, Map<String, JsonObject> typesToRead, boolean ignoreUnknownAnnotation) {
+            this.globTypeResolver = globTypeResolver;
             this.typesToRead = typesToRead;
             globTypeGsonDeserializer = new GlobTypeGsonDeserializer(new GlobGSonDeserializer(), this, ignoreUnknownAnnotation);
         }
 
         public GlobType find(String name) {
+            GlobType globType1 = globTypeResolver.find(name);
+            if (globType1 != null) {
+                return globType1;
+            }
             JsonObject jsonObject = typesToRead.get(name);
             if (jsonObject == null) {
                 return null;
+            }
+            GlobType globType = readTypes.get(name);
+            if (globType != null) {
+                return globType;
             }
             GlobType readType = globTypeGsonDeserializer.deserialize(jsonObject);
             readTypes.put(readType.getName(), readType);

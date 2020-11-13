@@ -70,6 +70,18 @@ public class GSonUtils {
         return out.toString();
     }
 
+    public static String encodeGlobType(GlobType globType) {
+        GlobTypeSet globTypeSet = GlobTypeSet.export(globType);
+        Gson gson = GlobsGson.create(name -> null);
+        return gson.toJson(globTypeSet);
+    }
+
+    public static GlobType decodeGlobType(String json, GlobTypeResolver resolver, boolean ignore) {
+        Gson gson = GlobsGson.createBuilder(resolver, ignore).create();
+        GlobTypeSet globTypeSet = gson.fromJson(json, GlobTypeSet.class);
+        return globTypeSet.globType[0];
+    }
+
     public static void encode(Writer out, Glob glob, boolean withKind) {
         try {
             JsonWriter jsonWriter = new JsonWriter(out);

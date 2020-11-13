@@ -465,8 +465,12 @@ public class GlobsGsonAdapterTest {
 
         fields = globType.getFields();
         for (Field field : fields) {
+            StringBuilder v1 = new StringBuilder();
+            field.toString(v1, glob.getValue(field));
+            StringBuilder v2 = new StringBuilder();
+            field.toString(v2, instantiate.getValue(field));
             Assert.assertTrue(field.getName() + " : " +
-                            field.toString(glob.getValue(field), "") + "->" + field.toString(instantiate.getValue(field), ""),
+                             v1.toString() + "->" + v2.toString(),
                     field.valueEqual(glob.getValue(field), instantiate.getValue(field)));
         }
     }
