@@ -10,11 +10,9 @@ import org.globsframework.metamodel.GlobType;
 import org.globsframework.metamodel.fields.DateField;
 import org.globsframework.metamodel.fields.DateTimeField;
 import org.globsframework.model.Glob;
+import org.globsframework.model.Key;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.io.Writer;
+import java.io.*;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +24,10 @@ public class GSonUtils {
 
     public static Map<String, DateTimeFormatter> CACHE_DATE = new ConcurrentHashMap<>();
     public static Map<String, DateTimeFormatter> CACHE_DATE_TIME = new ConcurrentHashMap<>();
+
+    public static Glob decode(String json, GlobType globType) {
+        return decode(new StringReader(json), globType);
+    }
 
     public static Glob decode(Reader reader, GlobType globType) {
         Glob glob = null;
@@ -66,11 +68,26 @@ public class GSonUtils {
 
     public static String encode(Glob glob, boolean withKind) {
         StringWriter out = new StringWriter();
-         encode(out, glob, withKind);
+        encode(out, glob, withKind);
+        return out.toString();
+    }
+
+    public static String encode(Key key, boolean withKind) {
+        StringWriter out = new StringWriter();
+        encode(out, key, withKind, false);
+        return out.toString();
+    }
+
+    public static String niceEncode(Glob glob, boolean withKind) {
+        StringWriter out = new StringWriter();
+        encode(out, glob, withKind, true);
         return out.toString();
     }
 
     public static String encodeGlobType(GlobType globType) {
+        if (globType == null) {
+            return null;
+        }
         GlobTypeSet globTypeSet = GlobTypeSet.export(globType);
         Gson gson = GlobsGson.create(name -> null);
         return gson.toJson(globTypeSet);
@@ -83,14 +100,39 @@ public class GSonUtils {
     }
 
     public static void encode(Writer out, Glob glob, boolean withKind) {
+        encode(out, glob, withKind, false);
+    }
+
+    public static void encode(Writer out, Glob glob, boolean withKind, boolean nice) {
         try {
             JsonWriter jsonWriter = new JsonWriter(out);
+            if (nice) {
+                jsonWriter.setIndent(" ");
+            }
             jsonWriter.beginObject();
             if (withKind) {
                 jsonWriter.name(GlobsGson.KIND_NAME).value(glob.getType().getName());
             }
             JsonFieldValueVisitor jsonFieldValueVisitor = new JsonFieldValueVisitor(jsonWriter);
             glob.safeAccept(jsonFieldValueVisitor);
+            jsonWriter.endObject();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void encode(Writer out, Key key, boolean withKind, boolean nice) {
+        try {
+            JsonWriter jsonWriter = new JsonWriter(out);
+            if (nice) {
+                jsonWriter.setIndent(" ");
+            }
+            jsonWriter.beginObject();
+            if (withKind) {
+                jsonWriter.name(GlobsGson.KIND_NAME).value(key.getGlobType().getName());
+            }
+            JsonFieldValueVisitor jsonFieldValueVisitor = new JsonFieldValueVisitor(jsonWriter);
+            key.safeAcceptOnKeyField(jsonFieldValueVisitor);
             jsonWriter.endObject();
         } catch (IOException e) {
             throw new RuntimeException(e);
