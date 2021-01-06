@@ -75,7 +75,7 @@ public class GlobGSonDeserializer {
         return instantiate;
     }
 
-    private static void read(JsonReader in, GlobType globType, FieldSetter instantiate) throws IOException {
+    public static void read(JsonReader in, GlobType globType, FieldSetter instantiate) throws IOException {
         while (in.hasNext() && in.peek() == JsonToken.NAME) {
             String name = in.nextName();
             Field field = globType.findField(name);

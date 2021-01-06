@@ -5,10 +5,14 @@ import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import org.globsframework.json.annottations.IsJsonContentType;
+import org.globsframework.json.annottations.JsonAsObjectType;
+import org.globsframework.json.annottations.JsonValueAsFieldType;
+import org.globsframework.metamodel.Field;
 import org.globsframework.metamodel.GlobType;
 import org.globsframework.metamodel.fields.*;
 import org.globsframework.model.FieldSetter;
 import org.globsframework.model.Glob;
+import org.globsframework.model.MutableGlob;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -17,8 +21,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 
 public class ReadJsonWithReaderFieldVisitor implements FieldVisitorWithTwoContext<FieldSetter, JsonReader> {
 
@@ -211,19 +217,36 @@ public class ReadJsonWithReaderFieldVisitor implements FieldVisitorWithTwoContex
     }
 
     public void visitGlobArray(GlobArrayField field, FieldSetter mutableGlob, JsonReader jsonReader) throws Exception {
-        jsonReader.beginArray();
-        Glob[] values = new Glob[16];
-        int count = 0;
-        while (jsonReader.peek() != JsonToken.END_ARRAY) {
-            if (values.length == count) {
-                values = Arrays.copyOf(values, values.length * 2);
+        GlobType targetType = field.getType();
+        List<Glob> objs = new ArrayList<>();
+        if (field.hasAnnotation(JsonAsObjectType.UNIQUE_KEY)) {
+            Field fieldValueToUseAsName = targetType.findFieldWithAnnotation(JsonValueAsFieldType.UNIQUE_KEY);
+            if (fieldValueToUseAsName == null) {
+                throw new RuntimeException("A field with " + JsonValueAsFieldType.TYPE.getName() + " annotation is expected after " +
+                        JsonAsObjectType.TYPE.getName());
             }
+            StringField typedFieldToUseAsName = fieldValueToUseAsName.asStringField();
             jsonReader.beginObject();
-            values[count++] = readField(jsonReader, field.getType());
-            jsonReader.endObject();
+            while (jsonReader.peek() != JsonToken.END_OBJECT) {
+                MutableGlob newObj = targetType.instantiate();
+                String value = jsonReader.nextName();
+                newObj.set(typedFieldToUseAsName, value);
+                jsonReader.beginObject();
+                GlobGSonDeserializer.read(jsonReader, targetType, newObj);
+                jsonReader.endObject();
+                objs.add(newObj);
+            }
         }
-        jsonReader.endArray();
-        mutableGlob.set(field, Arrays.copyOf(values, count));
+        else {
+            jsonReader.beginArray();
+            while (jsonReader.peek() != JsonToken.END_ARRAY) {
+                jsonReader.beginObject();
+                objs.add(readField(jsonReader, targetType));
+                jsonReader.endObject();
+            }
+            jsonReader.endArray();
+        }
+        mutableGlob.set(field, objs.toArray(new Glob[0]));
     }
 
     public void visitUnionGlob(GlobUnionField field, FieldSetter mutableGlob, JsonReader jsonReader) throws Exception {

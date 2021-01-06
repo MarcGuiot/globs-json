@@ -12,7 +12,10 @@ import org.globsframework.metamodel.fields.DateTimeField;
 import org.globsframework.model.Glob;
 import org.globsframework.model.Key;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +29,7 @@ public class GSonUtils {
     public static Map<String, DateTimeFormatter> CACHE_DATE_TIME = new ConcurrentHashMap<>();
 
     public static Glob decode(String json, GlobType globType) {
-        return decode(new StringReader(json), globType);
+        return decode(new NoLockStringReader(json), globType);
     }
 
     public static Glob decode(Reader reader, GlobType globType) {
@@ -42,10 +45,18 @@ public class GSonUtils {
         return glob;
     }
 
+    public static Glob[] decodeArray(String str, GlobType globType) {
+        return decodeArray(new NoLockStringReader(str), globType);
+    }
+
     public static Glob[] decodeArray(Reader reader, GlobType globType) {
         List<Glob> globs = new ArrayList<>();
         decodeArray(reader, globType, globs::add);
         return globs.toArray(new Glob[0]);
+    }
+
+    public static long decodeArray(String str, GlobType globType, Consumer<Glob> consumer) {
+        return decodeArray(new NoLockStringReader(str), globType, consumer);
     }
 
     public static long decodeArray(Reader reader, GlobType globType, Consumer<Glob> consumer) {
@@ -67,21 +78,24 @@ public class GSonUtils {
     }
 
     public static String encode(Glob glob, boolean withKind) {
-        StringWriter out = new StringWriter();
+        StringBuilder stringBuilder = new StringBuilder();
+        Writer out = new StringWriterToBuilder(stringBuilder);
         encode(out, glob, withKind);
-        return out.toString();
+        return stringBuilder.toString();
     }
 
     public static String encode(Key key, boolean withKind) {
-        StringWriter out = new StringWriter();
+        StringBuilder stringBuilder = new StringBuilder();
+        Writer out = new StringWriterToBuilder(stringBuilder);
         encode(out, key, withKind, false);
-        return out.toString();
+        return stringBuilder.toString();
     }
 
     public static String niceEncode(Glob glob, boolean withKind) {
-        StringWriter out = new StringWriter();
+        StringBuilder stringBuilder = new StringBuilder();
+        Writer out = new StringWriterToBuilder(stringBuilder);
         encode(out, glob, withKind, true);
-        return out.toString();
+        return stringBuilder.toString();
     }
 
     public static String encodeGlobType(GlobType globType) {
@@ -101,6 +115,15 @@ public class GSonUtils {
 
     public static void encode(Writer out, Glob glob, boolean withKind) {
         encode(out, glob, withKind, false);
+    }
+
+    public static void encode(StringBuilder out, Glob glob, boolean withKind) {
+        encode(out, glob, withKind, false);
+    }
+
+    // pour éviter le sync de StringBuffer lorsqu'on utilise un StringWriter
+    public static void encode(StringBuilder stringBuilder, Glob glob, boolean withKind, boolean nice) {
+        encode(new StringWriterToBuilder(stringBuilder), glob, withKind, nice);
     }
 
     public static void encode(Writer out, Glob glob, boolean withKind, boolean nice) {
@@ -237,6 +260,112 @@ public class GSonUtils {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    public static class StringWriterToBuilder extends Writer {
+        private final StringBuilder stringBuilder;
+
+        public StringWriterToBuilder(StringBuilder stringBuilder) {
+            this.stringBuilder = stringBuilder;
+        }
+
+        public void write(int c) throws IOException {
+            stringBuilder.append(((char) c));
+        }
+
+        public void write(char[] cbuf, int off, int len) throws IOException {
+            stringBuilder.append(cbuf, off, len);
+        }
+
+        public void write(char[] cbuf) throws IOException {
+            stringBuilder.append(cbuf);
+        }
+
+        public void write(String str) throws IOException {
+            stringBuilder.append(str);
+        }
+
+        public void write(String str, int off, int len) throws IOException {
+            stringBuilder.append(str, off, len);
+        }
+
+        public void flush() throws IOException {
+
+        }
+
+        public void close() throws IOException {
+
+        }
+
+    }
+
+    public static class NoLockStringReader extends Reader {
+        private final String str;
+        private final int length;
+        private int next = 0;
+        private int mark = 0;
+
+        public NoLockStringReader(String s) {
+            if (s == null) {
+                throw new NullPointerException();
+            }
+            this.str = s;
+            this.length = s.length();
+        }
+
+
+        public int read() throws IOException {
+            if (next >= length)
+                return -1;
+            return str.charAt(next++);
+        }
+
+        public int read(char cbuf[], int off, int len) throws IOException {
+            if ((off < 0) || (off > cbuf.length) || (len < 0) ||
+                    ((off + len) > cbuf.length) || ((off + len) < 0)) {
+                throw new IndexOutOfBoundsException();
+            } else if (len == 0) {
+                return 0;
+            }
+            if (next >= length)
+                return -1;
+            int n = Math.min(length - next, len);
+            str.getChars(next, next + n, cbuf, off);
+            next += n;
+            return n;
+        }
+
+        public long skip(long ns) throws IOException {
+            if (next >= length)
+                return 0;
+            // Bound skip by beginning and end of the source
+            long n = Math.min(length - next, ns);
+            n = Math.max(-next, n);
+            next += n;
+            return n;
+        }
+
+        public boolean ready() throws IOException {
+            return true;
+        }
+
+        public boolean markSupported() {
+            return true;
+        }
+
+        public void mark(int readAheadLimit) throws IOException {
+            if (readAheadLimit < 0) {
+                throw new IllegalArgumentException("Read-ahead limit < 0");
+            }
+            mark = next;
+        }
+
+        public void reset() throws IOException {
+            next = mark;
+        }
+
+        public void close() {
         }
     }
 }

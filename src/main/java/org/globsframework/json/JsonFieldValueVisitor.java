@@ -2,6 +2,9 @@ package org.globsframework.json;
 
 import com.google.gson.stream.JsonWriter;
 import org.globsframework.json.annottations.IsJsonContentType;
+import org.globsframework.json.annottations.JsonAsObjectType;
+import org.globsframework.json.annottations.JsonValueAsFieldType;
+import org.globsframework.metamodel.Field;
 import org.globsframework.metamodel.fields.*;
 import org.globsframework.model.Glob;
 
@@ -10,6 +13,7 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
+import java.util.Objects;
 
 class JsonFieldValueVisitor implements FieldValueVisitor {
     private final JsonWriter jsonWriter;
@@ -175,17 +179,47 @@ class JsonFieldValueVisitor implements FieldValueVisitor {
     }
 
     public void visitGlobArray(GlobArrayField field, Glob[] value) throws Exception {
-        jsonWriter.name(field.getName());
-        if (value != null) {
-            jsonWriter.beginArray();
-            for (Glob v : value) {
+        if (field.hasAnnotation(JsonAsObjectType.UNIQUE_KEY)) {
+            jsonWriter.name(field.getName());
+            jsonWriter.beginObject();
+            Field fieldValueToUseAsName = field.getType().findFieldWithAnnotation(JsonValueAsFieldType.UNIQUE_KEY);
+            if (fieldValueToUseAsName == null) {
+                throw new RuntimeException("A field with " + JsonValueAsFieldType.TYPE.getName() + " annotation is expected after " +
+                        JsonAsObjectType.TYPE.getName() + " for " + field.getFullName());
+            }
+            for (Glob glob : value) {
+                Object value1 = glob.getValue(fieldValueToUseAsName);
+                if (value1 == null) {
+                    throw new RuntimeException("Value can not be null for a JsonValueAsField field " + fieldValueToUseAsName.getFullName());
+                }
+                jsonWriter.name(Objects.toString(value1));
                 jsonWriter.beginObject();
-                addGlobAttributes(v);
+
+                glob.safeAccept(new AbstractFieldValueVisitor(){
+                    public void notManaged(Field field, Object value) throws Exception {
+                        if (field != fieldValueToUseAsName) {
+                            field.safeVisit(JsonFieldValueVisitor.this, value);
+                        }
+                    }
+                });
+
                 jsonWriter.endObject();
             }
-            jsonWriter.endArray();
-        } else {
-            jsonWriter.nullValue();
+            jsonWriter.endObject();
+        }
+        else {
+            jsonWriter.name(field.getName());
+            if (value != null) {
+                jsonWriter.beginArray();
+                for (Glob v : value) {
+                    jsonWriter.beginObject();
+                    addGlobAttributes(v);
+                    jsonWriter.endObject();
+                }
+                jsonWriter.endArray();
+            } else {
+                jsonWriter.nullValue();
+            }
         }
     }
 
