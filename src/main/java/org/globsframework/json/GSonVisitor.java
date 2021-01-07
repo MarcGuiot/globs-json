@@ -146,7 +146,7 @@ public abstract class GSonVisitor implements FieldVisitorWithTwoContext<JsonElem
    }
 
    public void visitGlob(GlobField field, JsonElement element, FieldSetter fieldSetter) throws Exception {
-       fieldSetter.set(field, readGlob(element.getAsJsonObject(), field.getType()));
+       fieldSetter.set(field, readGlob(element.getAsJsonObject(), field.getTargetType()));
    }
 
    public void visitGlobArray(GlobArrayField field, JsonElement element, FieldSetter fieldSetter) throws Exception {
@@ -154,21 +154,21 @@ public abstract class GSonVisitor implements FieldVisitorWithTwoContext<JsonElem
        Glob[] value = new Glob[asJsonArray.size()];
        int i = 0;
        for (JsonElement jsonElement : asJsonArray) {
-           value[i++] = readGlob(jsonElement.getAsJsonObject(), field.getType());
+           value[i++] = readGlob(jsonElement.getAsJsonObject(), field.getTargetType());
        }
        fieldSetter.set(field, value);
    }
 
    public void visitUnionGlob(GlobUnionField field, JsonElement element, FieldSetter fieldSetter) throws Exception {
        JsonObject asJsonObject = element.getAsJsonObject();
-       Collection<GlobType> types = field.getTypes();
+       Collection<GlobType> types = field.getTargetTypes();
        for (GlobType type : types) {
            if (asJsonObject.has(type.getName())) {
                fieldSetter.set(field, readGlob(asJsonObject.getAsJsonObject(type.getName()), type));
                return;
            }
        }
-       throw new RuntimeException("For " + field.getFullName() + " one of " + field.getTypes() + " is expected");
+       throw new RuntimeException("For " + field.getFullName() + " one of " + field.getTargetTypes() + " is expected");
    }
 
    public void visitUnionGlobArray(GlobArrayUnionField field, JsonElement element, FieldSetter fieldSetter) throws Exception {
@@ -183,13 +183,13 @@ public abstract class GSonVisitor implements FieldVisitorWithTwoContext<JsonElem
 
     private Glob readInnerGlob(GlobArrayUnionField field, JsonElement element) {
         JsonObject asJsonObject = element.getAsJsonObject();
-        Collection<GlobType> types = field.getTypes();
+        Collection<GlobType> types = field.getTargetTypes();
         for (GlobType type : types) {
             if (asJsonObject.has(type.getName())) {
                 return readGlob(asJsonObject.getAsJsonObject(type.getName()), type);
             }
         }
-        throw new RuntimeException("For " + field.getFullName() + " one of " + field.getTypes() +
+        throw new RuntimeException("For " + field.getFullName() + " one of " + field.getTargetTypes() +
                 " is expected got : " + asJsonObject);
     }
 

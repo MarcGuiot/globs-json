@@ -208,7 +208,7 @@ public class ReadJsonWithReaderFieldVisitor implements FieldVisitorWithTwoContex
 
     public void visitGlob(GlobField field, FieldSetter mutableGlob, JsonReader jsonReader) throws Exception {
         jsonReader.beginObject();
-        mutableGlob.set(field, readField(jsonReader, field.getType()));
+        mutableGlob.set(field, readField(jsonReader, field.getTargetType()));
         jsonReader.endObject();
     }
 
@@ -217,7 +217,7 @@ public class ReadJsonWithReaderFieldVisitor implements FieldVisitorWithTwoContex
     }
 
     public void visitGlobArray(GlobArrayField field, FieldSetter mutableGlob, JsonReader jsonReader) throws Exception {
-        GlobType targetType = field.getType();
+        GlobType targetType = field.getTargetType();
         List<Glob> objs = new ArrayList<>();
         if (field.hasAnnotation(JsonAsObjectType.UNIQUE_KEY)) {
             Field fieldValueToUseAsName = targetType.findFieldWithAnnotation(JsonValueAsFieldType.UNIQUE_KEY);
@@ -253,7 +253,7 @@ public class ReadJsonWithReaderFieldVisitor implements FieldVisitorWithTwoContex
         jsonReader.beginObject();
         String name = jsonReader.nextName();
         jsonReader.beginObject();
-        GlobType globType = field.get(name);
+        GlobType globType = field.getTargetType(name);
         mutableGlob.set(field, readField(jsonReader, globType));
         jsonReader.endObject();
         jsonReader.endObject();
@@ -270,7 +270,7 @@ public class ReadJsonWithReaderFieldVisitor implements FieldVisitorWithTwoContex
             jsonReader.beginObject();
             String name = jsonReader.nextName();
             jsonReader.beginObject();
-            values[count++] = readField(jsonReader, field.get(name));
+            values[count++] = readField(jsonReader, field.getTargetType(name));
             jsonReader.endObject();
             jsonReader.endObject();
         }

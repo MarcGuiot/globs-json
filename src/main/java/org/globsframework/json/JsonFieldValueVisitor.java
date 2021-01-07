@@ -182,7 +182,7 @@ class JsonFieldValueVisitor implements FieldValueVisitor {
         if (field.hasAnnotation(JsonAsObjectType.UNIQUE_KEY)) {
             jsonWriter.name(field.getName());
             jsonWriter.beginObject();
-            Field fieldValueToUseAsName = field.getType().findFieldWithAnnotation(JsonValueAsFieldType.UNIQUE_KEY);
+            Field fieldValueToUseAsName = field.getTargetType().findFieldWithAnnotation(JsonValueAsFieldType.UNIQUE_KEY);
             if (fieldValueToUseAsName == null) {
                 throw new RuntimeException("A field with " + JsonValueAsFieldType.TYPE.getName() + " annotation is expected after " +
                         JsonAsObjectType.TYPE.getName() + " for " + field.getFullName());

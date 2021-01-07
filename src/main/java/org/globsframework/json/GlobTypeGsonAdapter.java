@@ -120,7 +120,7 @@ class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
                     public void visitGlob(GlobField field) throws Exception {
                         writeField(field, GlobsGson.GLOB_TYPE, out, jsonWriter -> {
                             try {
-                                jsonWriter.name(GlobsGson.GLOB_TYPE_KIND).value(field.getType().getName());
+                                jsonWriter.name(GlobsGson.GLOB_TYPE_KIND).value(field.getTargetType().getName());
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }
@@ -130,7 +130,7 @@ class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
                     public void visitGlobArray(GlobArrayField field) throws Exception {
                         writeField(field, GlobsGson.GLOB_ARRAY_TYPE, out, jsonWriter -> {
                             try {
-                                jsonWriter.name(GlobsGson.GLOB_TYPE_KIND).value(field.getType().getName());
+                                jsonWriter.name(GlobsGson.GLOB_TYPE_KIND).value(field.getTargetType().getName());
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }
@@ -138,11 +138,11 @@ class GlobTypeGsonAdapter extends TypeAdapter<GlobType> {
                     }
 
                     public void visitUnionGlob(GlobUnionField field) throws Exception {
-                        writeField(field, GlobsGson.GLOB_UNION_TYPE, out, new JsonUnionFieldWriterConsumer(field.getTypes()));
+                        writeField(field, GlobsGson.GLOB_UNION_TYPE, out, new JsonUnionFieldWriterConsumer(field.getTargetTypes()));
                     }
 
                     public void visitUnionGlobArray(GlobArrayUnionField field) throws Exception {
-                        writeField(field, GlobsGson.GLOB_UNION_ARRAY_TYPE, out, new JsonUnionFieldWriterConsumer(field.getTypes()));
+                        writeField(field, GlobsGson.GLOB_UNION_ARRAY_TYPE, out, new JsonUnionFieldWriterConsumer(field.getTargetTypes()));
                     }
                 });
             }

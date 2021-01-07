@@ -39,19 +39,19 @@ public class GlobTypeSet {
         for (Field field : fields) {
             field.streamAnnotations().map(Glob::getType).forEach(types::add);
             if (field instanceof GlobArrayField) {
-                add(((GlobArrayField) field).getType(), types);
+                add(((GlobArrayField) field).getTargetType(), types);
             }
             if (field instanceof GlobField) {
-                add(((GlobField) field).getType(), types);
+                add(((GlobField) field).getTargetType(), types);
             }
             if (field instanceof GlobUnionField) {
-                Collection<GlobType> subType = ((GlobUnionField) field).getTypes();
+                Collection<GlobType> subType = ((GlobUnionField) field).getTargetTypes();
                 for (GlobType type : subType) {
                     add(type, types);
                 }
             }
             if (field instanceof GlobArrayUnionField) {
-                Collection<GlobType> subType = ((GlobArrayUnionField) field).getTypes();
+                Collection<GlobType> subType = ((GlobArrayUnionField) field).getTargetTypes();
                 for (GlobType type : subType) {
                     add(type, types);
                 }
