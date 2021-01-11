@@ -287,7 +287,7 @@ public class GSonUtils {
         }
 
         public void write(String str, int off, int len) throws IOException {
-            stringBuilder.append(str, off, len);
+            stringBuilder.append(str, off, off + len);
         }
 
         public void flush() throws IOException {
