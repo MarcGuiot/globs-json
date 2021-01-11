@@ -14,7 +14,6 @@ import org.globsframework.model.Key;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -196,9 +195,10 @@ public class GSonUtils {
         return dateConverter;
     }
 
-    public static String encode(Glob glob[], boolean withKind) {
+    public static String encode(Glob[] glob, boolean withKind) {
         try {
-            StringWriter out = new StringWriter();
+            StringBuilder stringBuilder = new StringBuilder();
+            StringWriterToBuilder out = new StringWriterToBuilder(stringBuilder);
             JsonWriter jsonWriter = new JsonWriter(out);
             JsonFieldValueVisitor jsonFieldValueVisitor = new JsonFieldValueVisitor(jsonWriter);
             jsonWriter.beginArray();
@@ -211,7 +211,7 @@ public class GSonUtils {
                 jsonWriter.endObject();
             }
             jsonWriter.endArray();
-            return out.toString();
+            return stringBuilder.toString();
         } catch (IOException e) {
             throw new RuntimeException("In encode", e);
         }
