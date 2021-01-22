@@ -218,9 +218,8 @@ public class GSonUtils {
     }
 
     public static String normalize(String json) {
-        JsonParser jsonParser = new JsonParser();
         Gson gson = new Gson();
-        return gson.toJson(jsonParser.parse(json));
+        return gson.toJson(JsonParser.parseReader(new NoLockStringReader(json)));
     }
 
     public static class WriteGlob {

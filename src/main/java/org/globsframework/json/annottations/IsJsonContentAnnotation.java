@@ -10,5 +10,5 @@ import java.lang.annotation.RetentionPolicy;
 @java.lang.annotation.Target({ElementType.FIELD})
 public @interface IsJsonContentAnnotation {
 
-    public GlobType TYPE = IsJsonContentType.TYPE;
+    GlobType TYPE = IsJsonContentType.TYPE;
 }

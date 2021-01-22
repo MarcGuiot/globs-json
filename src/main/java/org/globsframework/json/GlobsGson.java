@@ -51,7 +51,7 @@ public class GlobsGson {
                 .registerTypeHierarchyAdapter(GlobType.class, new GlobTypeArrayGsonAdapter(false, globTypeResolver, ignoreUnknownAnnotation))
                 .registerTypeHierarchyAdapter(GlobTypeSet.class, new GlobTypeSetAdapter(false, globTypeResolver, ignoreUnknownAnnotation))
                 .registerTypeHierarchyAdapter(Glob.class, new GlobGsonAdapter(globTypeResolver))
-//                .registerTypeHierarchyAdapter(Key.class, new KeyGsonAdapter(globTypeResolver)) // not possible because AbstrctGlob inherit from Key...
+//                .registerTypeHierarchyAdapter(Key.class, new KeyGsonAdapter(globTypeResolver)) // not possible because AbstractGlob inherit from Key...
                 .registerTypeHierarchyAdapter(PreChangeSet.class, new PreChangeSetGsonAdapter(globTypeResolver))
                 ;
     }
