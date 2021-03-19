@@ -56,6 +56,7 @@ public class GSonUtilsTest {
         String s = GSonUtils.encodeGlobType(LocalType.TYPE);
         System.out.println(s);
         GlobType type = GSonUtils.decodeGlobType(s, AllAnnotations.RESOLVER, false);
+        Assert.assertTrue(type.getField("id").isKeyField());
         Assert.assertTrue(type.getField("id").hasAnnotation(KeyAnnotationType.UNIQUE_KEY));
         Assert.assertTrue(type.getField("arrival").hasAnnotation(JsonDateTimeFormatType.UNIQUE_KEY));
         Assert.assertEquals(LocalType.TYPE.getName(), type.getName());

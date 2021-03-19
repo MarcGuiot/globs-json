@@ -66,8 +66,7 @@ public class ReadJsonWithReaderFieldVisitor implements FieldVisitorWithTwoContex
 
     public void visitString(StringField field, FieldSetter mutableGlob, JsonReader jsonReader) throws Exception {
         if (field.hasAnnotation(IsJsonContentType.UNIQUE_KEY)) {
-            JsonParser jsonParser = new JsonParser();
-            JsonElement parse = jsonParser.parse(jsonReader);
+            JsonElement parse = JsonParser.parseReader(jsonReader);
             if (parse.isJsonArray()) {
                 mutableGlob.set(field, GlobGSonDeserializer.GSON.toJson(parse.getAsJsonArray()));
             } else if (parse.isJsonObject()) {

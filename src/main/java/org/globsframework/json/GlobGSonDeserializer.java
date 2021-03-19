@@ -39,8 +39,7 @@ public class GlobGSonDeserializer {
             String type = jsonObject.get(GlobsGson.KIND_NAME).getAsString();
             if (type.equals(UnknownAnnotation.TYPE.getName())) {
                 MutableGlob mutableGlob = readGlob(jsonObject, UnknownAnnotation.TYPE);
-                JsonParser jsonParser = new JsonParser();
-                return deserialize(jsonParser.parse(new StringReader(mutableGlob.get(UnknownAnnotation.CONTENT))), globTypeResolver, ignoreUnknownAnnotation);
+                return deserialize(JsonParser.parseReader(new StringReader(mutableGlob.get(UnknownAnnotation.CONTENT))), globTypeResolver, ignoreUnknownAnnotation);
             }
             GlobType globType = ignoreUnknownAnnotation ? globTypeResolver.find(type) : globTypeResolver.get(type);
             if (globType == null) {
@@ -133,11 +132,10 @@ public class GlobGSonDeserializer {
     }
 
     private static Glob readFieldByField(JsonReader in, String name, GlobTypeResolver resolver) throws IOException {
-        JsonParser jsonParser = new JsonParser();
         Map<String, JsonElement> values = new HashMap<>();
-        values.put(name, jsonParser.parse(in));
+        values.put(name, JsonParser.parseReader(in));
         while (in.peek() != JsonToken.END_OBJECT) {
-            values.put(in.nextName(), jsonParser.parse(in));
+            values.put(in.nextName(), JsonParser.parseReader(in));
         }
         in.endObject();
         JsonElement kindElement = values.get(GlobsGson.KIND_NAME);
@@ -156,11 +154,10 @@ public class GlobGSonDeserializer {
     }
 
     private static Key readKeyFieldByField(JsonReader in, String name, GlobTypeResolver resolver) throws IOException {
-        JsonParser jsonParser = new JsonParser();
         Map<String, JsonElement> values = new HashMap<>();
-        values.put(name, jsonParser.parse(in));
+        values.put(name, JsonParser.parseReader(in));
         while (in.peek() != JsonToken.END_OBJECT) {
-            values.put(in.nextName(), jsonParser.parse(in));
+            values.put(in.nextName(), JsonParser.parseReader(in));
         }
         in.endObject();
         JsonElement kindElement = values.get(GlobsGson.KIND_NAME);
