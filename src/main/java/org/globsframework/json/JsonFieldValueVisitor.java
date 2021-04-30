@@ -15,7 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Objects;
 
-class JsonFieldValueVisitor implements FieldValueVisitor {
+public class JsonFieldValueVisitor implements FieldValueVisitor {
     private final JsonWriter jsonWriter;
 
     public JsonFieldValueVisitor(JsonWriter jsonWriter) {

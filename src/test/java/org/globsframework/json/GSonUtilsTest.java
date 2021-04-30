@@ -4,7 +4,6 @@ import org.globsframework.json.annottations.AllAnnotations;
 import org.globsframework.json.annottations.JsonDateTimeFormatAnnotation;
 import org.globsframework.metamodel.GlobType;
 import org.globsframework.metamodel.GlobTypeLoaderFactory;
-import org.globsframework.metamodel.annotations.FieldNameAnnotationType;
 import org.globsframework.metamodel.annotations.KeyAnnotationType;
 import org.globsframework.metamodel.annotations.KeyField;
 import org.globsframework.metamodel.annotations.Required;
@@ -25,7 +24,7 @@ public class GSonUtilsTest {
     @Test
     public void globWriterTest() {
         StringWriter writer = new StringWriter();
-        GSonUtils.WriteGlob writeGlob = new GSonUtils.WriteGlob(writer,false);
+        GSonUtils.WriteGlob writeGlob = new GSonUtils.WriteGlob(writer, false);
         writeGlob.push(LocalType.TYPE.instantiate()
                 .set(LocalType.id, 23)
                 .set(LocalType.name, "TEST")
