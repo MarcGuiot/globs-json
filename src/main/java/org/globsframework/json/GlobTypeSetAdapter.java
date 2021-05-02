@@ -53,7 +53,7 @@ public class GlobTypeSetAdapter extends TypeAdapter<GlobTypeSet> {
         }
         Resolver resolver = new Resolver(globTypeResolver, typesToRead, ignoreUnknownAnnotation);
         typesToRead.forEach((key, value) -> resolver.find(key));
-        return new GlobTypeSet(typesToRead.keySet().stream().map(resolver.readTypes::get).toArray(GlobType[]::new));
+        return new GlobTypeSet(typesToRead.keySet().stream().map(resolver::find).toArray(GlobType[]::new));
     }
 
     static class Resolver implements GlobTypeResolver {
