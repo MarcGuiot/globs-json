@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
@@ -379,7 +380,21 @@ public class GlobsGsonAdapterTest {
             "  \"dateTime\": \"2018-02-04T15:45:34.000001+01:00[Europe/Paris]\",\n" +
             "  \"blob\": \"AwQ\\u003d\"\n," +
             "  \"glob\":{\"value\":3.0,\"date\":17000}," +
-            "  \"globArray\":[{\"value\":3.0,\"date\":17000},{\"value\":2.8,\"date\":17001},{\"value\":2.7,\"date\":17002}]" +
+            "  \"globArray\":[{\"value\":3.0,\"date\":17000},{\"value\":2.8,\"date\":17001},{\"value\":2.7,\"date\":17002}]," +
+            "  \"globArrayUnion\": [\n" +
+            "    {\n" +
+            "      \"histo\": {\n" +
+            "        \"value\": 3.0,\n" +
+            "        \"date\": 17000\n" +
+            "      }\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"histo2\": {\n" +
+            "        \"value2\": 2.8,\n" +
+            "        \"date2\": 17001\n" +
+            "      }\n" +
+            "    }\n" +
+            "  ]" +
             "}";
 
     @Test
@@ -388,6 +403,11 @@ public class GlobsGsonAdapterTest {
         DoubleField valueField = innerGlobTypeBuilder.declareDoubleField("value");
         IntegerField dateField = innerGlobTypeBuilder.declareIntegerField("date");
         GlobType innerType = innerGlobTypeBuilder.get();
+
+        GlobTypeBuilder inner2GlobTypeBuilder = DefaultGlobTypeBuilder.init("histo2");
+        DoubleField valueField2 = inner2GlobTypeBuilder.declareDoubleField("value2");
+        IntegerField dateField2 = inner2GlobTypeBuilder.declareIntegerField("date2");
+        GlobType innerType2 = inner2GlobTypeBuilder.get();
 
         GlobTypeBuilder globTypeBuilder = DefaultGlobTypeBuilder.init("AllType");
         IntegerField anInt = globTypeBuilder.declareIntegerField("int");
@@ -411,9 +431,10 @@ public class GlobsGsonAdapterTest {
         BlobField blob = globTypeBuilder.declareBlobField("blob");
         GlobField globField = globTypeBuilder.declareGlobField("glob", innerType);
         GlobArrayField globArrayField = globTypeBuilder.declareGlobArrayField("globArray", innerType);
+        GlobArrayUnionField globArrayUnionField = globTypeBuilder.declareGlobUnionArrayField("globArrayUnion", List.of(innerType, innerType2));
         GlobType globType = globTypeBuilder.get();
 
-        Gson gson = init(globType, innerType);
+        Gson gson = init(globType, innerType, innerType2);
 
         //write-read globType
         String s = gson.toJson(globType);
@@ -434,6 +455,9 @@ public class GlobsGsonAdapterTest {
                 .set(stringArray, new String[]{"un", "deux", "trois"})
                 .set(jsonObjectString, "{\"arg1\":\"vale1\",\"v\":2}")
                 .set(jsonObjectStringArray, new String[]{"{\"arg1\":\"value1\",\"v\":2}", "{\"arg1\":\"value3\",\"v\":3}"})
+                .set(globArrayUnionField, new Glob[] {
+                        innerType.instantiate().set(valueField, 3).set(dateField, 17000),
+                        innerType2.instantiate().set(valueField2, 2.8).set(dateField2, 17001)})
                 .set(jsonArrayString, "[\"a\",\"b\"]")
                 .set(jsonArrayStringArray, new String[]{"[\"a\",\"b\"]", "[\"a\",\"b\"]"})
                 .set(aLong, 2L)
